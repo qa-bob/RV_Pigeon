@@ -204,6 +204,13 @@ export const outdoorsyAdapter: PlatformAdapter = {
         // If the URL doesn't change as expected, the extraction below will
         // simply come back empty and this row gets skipped — not fatal.
       });
+      // The URL/route can change before the detail content actually renders
+      // (same class of bug as the login/list-count fixes above) — wait for
+      // the Booking ID label specifically rather than reading immediately.
+      await page
+        .getByText(SELECTORS.detailBookingIdLabel, { exact: true })
+        .waitFor({ state: "visible", timeout: 15_000 })
+        .catch(() => {});
 
       const detail = await page.evaluate(
         ({ bookingIdLabel, startsLabel, endsLabel }) => {
