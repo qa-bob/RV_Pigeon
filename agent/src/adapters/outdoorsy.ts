@@ -25,7 +25,14 @@ const SELECTORS = {
   logInSubmitName: "Log in", // exact match, distinguishes from the nav button of the same name
   switchToHostingLinkName: "Switch to hosting",
   acceptCookiesText: "Accept cookies",
+  // Two different real links both match a fuzzy name of "Bookings" — the
+  // sidebar nav item (exact text "Bookings", filtered to ?tab=Pending) and a
+  // "View all bookings" CTA. bookingsLinkName + exact:true targets only the
+  // former (used just as an "are we in hosting mode" visibility check);
+  // bookingsUrl navigates directly to the latter's unfiltered URL, which is
+  // what we actually want for listing every reservation regardless of status.
   bookingsLinkName: "Bookings",
+  bookingsUrl: "https://www.outdoorsy.com/dashboard/bookings",
 
   // Still placeholders — see file header.
   reservationRow: '[data-testid="reservation-row"]',
@@ -81,7 +88,7 @@ async function dismissIfPresent(page: Page, locate: () => ReturnType<Page["getBy
 
 /** Ensures the page is in the hosting view (Bookings visible), not the guest view. */
 async function ensureHostingView(page: Page): Promise<void> {
-  const bookingsLink = page.getByRole("link", { name: SELECTORS.bookingsLinkName });
+  const bookingsLink = page.getByRole("link", { name: SELECTORS.bookingsLinkName, exact: true });
   const alreadyHosting = await bookingsLink.isVisible().catch(() => false);
   if (alreadyHosting) return;
 
@@ -128,7 +135,7 @@ export const outdoorsyAdapter: PlatformAdapter = {
   async listReservations(session: PlatformSession): Promise<PlatformReservation[]> {
     const { page } = session as OutdoorsySession;
     try {
-      await page.getByRole("link", { name: SELECTORS.bookingsLinkName }).click({ timeout: 30_000 });
+      await page.goto(SELECTORS.bookingsUrl);
     } catch (err) {
       const screenshotPath = await captureDebugScreenshot(page, "list-reservations-failed");
       throw new Error(
