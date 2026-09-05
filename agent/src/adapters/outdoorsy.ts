@@ -92,6 +92,22 @@ function parseDetailDateTime(text: string): string {
   return parsed.toISOString();
 }
 
+/**
+ * tsx (via esbuild's `keepNames`) wraps every function/arrow-const in this
+ * file with a call to a `__name(fn, "name")` helper, to preserve `.name` at
+ * runtime. That helper only exists in this Node process's own build output —
+ * page.evaluate() serializes its callback to a plain string and runs it
+ * standalone in the browser, where a bare `__name` reference throws
+ * "ReferenceError: __name is not defined". Registering this as an init
+ * script (rather than a one-off page.evaluate()) makes it available on
+ * every navigation for the lifetime of the context, not just the current page.
+ */
+async function addNamePolyfill(context: BrowserContext): Promise<void> {
+  await context.addInitScript(() => {
+    (window as unknown as { __name?: unknown }).__name ??= (fn: unknown) => fn;
+  });
+}
+
 const DEBUG_SCREENSHOT_DIR = `${homedir()}\\.rv-pigeon\\debug-screenshots`;
 
 /** Saves a screenshot on failure so you can see what actually happened, without needing to have been watching. */
@@ -123,6 +139,7 @@ export const outdoorsyAdapter: PlatformAdapter = {
     const headless = process.env.RV_PIGEON_HEADLESS !== "false";
     const browser = await chromium.launch({ headless });
     const context = await browser.newContext({ storageState: storageState as any });
+    await addNamePolyfill(context);
     const page = await context.newPage();
 
     try {
@@ -308,6 +325,7 @@ export const outdoorsyAdapter: PlatformAdapter = {
 export async function bootstrapOutdoorsySession(): Promise<void> {
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
+  await addNamePolyfill(context);
   const page = await context.newPage();
   await page.goto(SELECTORS.homepageUrl);
 
