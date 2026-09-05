@@ -47,22 +47,22 @@ Four packages at the repository root, per plan.md: `web/`, `api/`, `agent/`, `sh
 **⚠️ CRITICAL**: No user story work starts until this phase is complete
 
 - [X] T007 [P] Define shared TypeScript types (Trip, Listing, MessageTemplate, ScheduledMessage, AgentActivityLog, and the dashboard-api/agent-api request/response shapes) in `shared/src/types/`
-- [ ] T008 Implement the MongoDB connection module in `api/src/db.ts`, reading `MONGODB_URI`
-- [ ] T009 [P] Implement the Host model (`email`, `passwordHash`) in `api/src/models/host.ts`
-- [ ] T010 [P] Implement the Listing model in `api/src/models/listing.ts`, including `guestInstructions` (5000/170-char limits) and `carGuide` (5000-char tips + FAQ array) sub-schemas per data-model.md
-- [ ] T011 [P] Implement the Trip model in `api/src/models/trip.ts` with a unique `(listingId, externalTripId)` index and the `booked/active/completed/cancelled` status enum
-- [ ] T012 [P] Implement the MessageTemplate model in `api/src/models/messageTemplate.ts` with the `applicability` sub-schema and 2000-char body limit
-- [ ] T013 [P] Implement the ScheduledMessage model in `api/src/models/scheduledMessage.ts` with a unique `(tripId, templateId)` index
-- [ ] T014 [P] Implement the AgentActivityLog model in `api/src/models/agentActivityLog.ts`
-- [ ] T015 [P] Implement dashboard JWT auth middleware in `api/src/middleware/dashboardAuth.ts`
-- [ ] T016 [P] Implement agent service-token auth middleware in `api/src/middleware/agentAuth.ts` (validates against `AGENT_SERVICE_TOKEN`)
-- [ ] T017 Implement `POST /api/auth/login` in `api/src/routes/auth.ts` (bcrypt compare, JWT issue) — depends on T009, T015
-- [ ] T018 Implement `api/scripts/seedHost.ts` (prompts for email/password, bcrypt-hashes, inserts the single Host) — depends on T009
-- [ ] T019 Wire the Express app skeleton (middleware, route mounting, error handler) in `api/src/app.ts` and entrypoint `api/src/index.ts` — depends on T015, T016, T017
-- [ ] T020 [P] Define the platform adapter interface (`login`, `listReservations`, `postMessage`) in `agent/src/adapter.interface.ts`
-- [ ] T021 [P] Implement the local encrypted Outdoorsy credential store (Windows DPAPI-backed) in `agent/src/credential-store.ts`
-- [ ] T022 [P] Scaffold the web app shell (router, layout, protected-route wrapper) in `web/src/App.tsx` and the login page in `web/src/pages/Login.tsx`
-- [ ] T023 [P] Implement the dashboard-api client wrapper (attaches JWT, reads base URL from env) in `web/src/services/apiClient.ts`
+- [X] T008 Implement the MongoDB connection module in `api/src/db.ts`, reading `MONGODB_URI`
+- [X] T009 [P] Implement the Host model (`email`, `passwordHash`) in `api/src/models/host.ts`
+- [X] T010 [P] Implement the Listing model in `api/src/models/listing.ts`, including `guestInstructions` (5000/170-char limits) and `carGuide` (5000-char tips + FAQ array) sub-schemas per data-model.md
+- [X] T011 [P] Implement the Trip model in `api/src/models/trip.ts` with a unique `(listingId, externalTripId)` index and the `booked/active/completed/cancelled` status enum
+- [X] T012 [P] Implement the MessageTemplate model in `api/src/models/messageTemplate.ts` with the `applicability` sub-schema and 2000-char body limit
+- [X] T013 [P] Implement the ScheduledMessage model in `api/src/models/scheduledMessage.ts` with a unique `(tripId, templateId)` index
+- [X] T014 [P] Implement the AgentActivityLog model in `api/src/models/agentActivityLog.ts`
+- [X] T015 [P] Implement dashboard JWT auth middleware in `api/src/middleware/dashboardAuth.ts`
+- [X] T016 [P] Implement agent service-token auth middleware in `api/src/middleware/agentAuth.ts` (validates against `AGENT_SERVICE_TOKEN`)
+- [X] T017 Implement `POST /api/auth/login` in `api/src/routes/auth.ts` (bcrypt compare, JWT issue) — depends on T009, T015
+- [X] T018 Implement `api/scripts/seedHost.ts` (prompts for email/password, bcrypt-hashes, inserts the single Host) — depends on T009
+- [X] T019 Wire the Express app skeleton (middleware, route mounting, error handler) in `api/src/app.ts` and entrypoint `api/src/index.ts` — depends on T015, T016, T017
+- [X] T020 [P] Define the platform adapter interface (`login`, `listReservations`, `postMessage`) in `agent/src/adapter.interface.ts`
+- [X] T021 [P] Implement the local encrypted Outdoorsy credential store (Windows DPAPI-backed) in `agent/src/credential-store.ts`
+- [X] T022 [P] Scaffold the web app shell (router, layout, protected-route wrapper) in `web/src/App.tsx` and the login page in `web/src/pages/Login.tsx`
+- [X] T023 [P] Implement the dashboard-api client wrapper (attaches JWT, reads base URL from env) in `web/src/services/apiClient.ts`
 
 **Checkpoint**: Foundation ready — user story work can begin.
 
