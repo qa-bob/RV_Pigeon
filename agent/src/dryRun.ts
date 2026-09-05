@@ -1,20 +1,19 @@
 // Manual verification mode for the Outdoorsy adapter (Constitution
 // Principle VI: the adapter is exempt from automated test-first and is
-// validated this way instead). Logs in and lists reservations with a
-// VISIBLE browser, but never calls postMessage — nothing gets sent to a
-// real guest. Run with `npm run dry-run` after `npm run setup-credentials`.
+// validated this way instead). Resumes your saved session (run
+// `npm run bootstrap-session` first) with a VISIBLE browser and lists
+// reservations, but never calls postMessage — nothing gets sent to a real
+// guest. Run with `npm run dry-run`.
 import "dotenv/config";
-import { loadCredentials } from "./credential-store";
 import { outdoorsyAdapter } from "./adapters/outdoorsy";
 
 process.env.RV_PIGEON_HEADLESS = "false";
 
 async function main() {
-  const credentials = loadCredentials();
-  console.log("Logging into Outdoorsy...");
-  const session = await outdoorsyAdapter.login(credentials);
+  console.log("Resuming saved Outdoorsy session...");
+  const session = await outdoorsyAdapter.login();
   try {
-    console.log("Login succeeded. Listing reservations...");
+    console.log("Session valid. Listing reservations...");
     const reservations = await outdoorsyAdapter.listReservations(session);
     console.log(`Found ${reservations.length} reservation(s):`);
     console.table(reservations);

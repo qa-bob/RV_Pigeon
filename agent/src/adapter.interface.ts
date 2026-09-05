@@ -2,7 +2,6 @@
 // Per Constitution Principle II, no platform-specific logic (selectors,
 // page structure, quirks) may exist anywhere outside a file implementing
 // this interface (e.g., agent/src/adapters/outdoorsy.ts).
-import type { OutdoorsyCredentials } from "./credential-store";
 import type { PlatformReservation } from "@rv-pigeon/shared";
 
 export interface PlatformSession {
@@ -11,8 +10,16 @@ export interface PlatformSession {
 }
 
 export interface PlatformAdapter {
-  /** Log into the platform, returning a session used by the other methods. */
-  login(credentials: OutdoorsyCredentials): Promise<PlatformSession>;
+  /**
+   * Resume a previously-established authenticated session (see each
+   * adapter's own bootstrap step) and return it for use by the other
+   * methods. Takes no credentials — routine automated runs never perform a
+   * fresh interactive login (that may require solving a CAPTCHA or entering
+   * an emailed code, which only a human can do). If no valid session is
+   * available, this should throw a clear error telling the host to re-run
+   * that adapter's bootstrap step.
+   */
+  login(): Promise<PlatformSession>;
 
   /** List current reservations for the connected host account. */
   listReservations(session: PlatformSession): Promise<PlatformReservation[]>;

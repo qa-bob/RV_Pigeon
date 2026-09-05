@@ -12,6 +12,10 @@ A runnable validation guide, not an implementation guide. Assumes the `web`, `ap
   `agent/.env` (`SERVICE_TOKEN`)
 - The host's real Outdoorsy login, entered once via the agent's local credential-store setup step
   (never committed, never sent to the API — see `research.md`)
+- A bootstrapped Outdoorsy session (`npm run bootstrap-session` in `agent/`) — Outdoorsy requires
+  solving a CAPTCHA and an emailed verification code at login, which only a human can do, so
+  routine automated runs authenticate by resuming this saved session instead of logging in fresh
+  each time (see `research.md`, "Login session strategy")
 - One real (or test) Outdoorsy listing with at least one upcoming trip, for end-to-end validation
 
 ## Setup
@@ -44,11 +48,19 @@ minutes and the template to appear in the templates list as `active`.
 
 ### 2. Automatic delivery (User Story 1)
 
-Run the agent once manually:
+One-time setup, done by a human (not automatable — see `research.md`):
 
 ```bash
 # agent/
-npm run sync      # calls adapter.listReservations, POSTs /agent/sync-trips
+npm run setup-credentials   # stores your Outdoorsy login, encrypted, local-only
+npm run bootstrap-session   # you log in manually (CAPTCHA + emailed code), session gets saved
+```
+
+Then run the agent:
+
+```bash
+# agent/
+npm run sync      # resumes the saved session, calls adapter.listReservations, POSTs /agent/sync-trips
 npm run deliver    # calls GET /agent/due-messages, posts each into Outdoorsy, POSTs /agent/report-result
 ```
 
@@ -72,9 +84,10 @@ unaffected).
 
 ### 5. Failure visibility (SC-006, FR-015)
 
-Temporarily point the agent at invalid Outdoorsy credentials and run `npm run sync`. Confirm
-`POST /agent/report-sync-failure` is called, and the failure appears in the dashboard's activity
-feed (`GET /api/activity`) within that same run — not silently dropped.
+Delete or rename the saved session file and run `npm run sync`. Confirm the agent fails with a
+clear "session expired, re-run bootstrap-session" message, `POST /agent/report-sync-failure` is
+called, and the failure appears in the dashboard's activity feed (`GET /api/activity`) within that
+same run — not silently dropped or retried against a CAPTCHA it can't solve.
 
 ## Reference
 

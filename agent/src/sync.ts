@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { loadCredentials } from "./credential-store";
 import { outdoorsyAdapter } from "./adapters/outdoorsy";
 import { syncTrips, reportSyncFailure } from "./apiClient";
 
@@ -9,8 +8,7 @@ export async function runSync(): Promise<void> {
     throw new Error("OUTDOORSY_LISTING_ID is not set (see agent/.env.example)");
   }
 
-  const credentials = loadCredentials();
-  const session = await outdoorsyAdapter.login(credentials);
+  const session = await outdoorsyAdapter.login();
   try {
     const reservations = await outdoorsyAdapter.listReservations(session);
     const { created, updated } = await syncTrips({ listingExternalId, trips: reservations });

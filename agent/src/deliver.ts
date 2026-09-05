@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { loadCredentials } from "./credential-store";
 import { outdoorsyAdapter } from "./adapters/outdoorsy";
 import { getDueMessages, reportResult } from "./apiClient";
 
@@ -10,8 +9,7 @@ export async function runDeliver(): Promise<void> {
     return;
   }
 
-  const credentials = loadCredentials();
-  const session = await outdoorsyAdapter.login(credentials);
+  const session = await outdoorsyAdapter.login();
   try {
     for (const message of due) {
       try {

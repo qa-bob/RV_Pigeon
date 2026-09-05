@@ -1,7 +1,30 @@
 # Research: Outdoorsy Scheduled Guest Messaging
 
 All items below were resolved through direct discussion with the project owner before this plan
-was drafted; none carry a `NEEDS CLARIFICATION` marker into Phase 1.
+was drafted; none carry a `NEEDS CLARIFICATION` marker into Phase 1. One item (Login session
+strategy) was added after implementation began, once real site behavior was observed — see its own
+entry below for what changed and why.
+
+## Login session strategy (fresh login vs. resumed session)
+
+- **Decision**: The agent never performs an interactive Outdoorsy login on its own. A human
+  manually logs in once (via `npm run bootstrap-session`, a visible browser), and the resulting
+  authenticated session (cookies/localStorage) is saved locally, encrypted the same way as the
+  Outdoorsy password. Routine `sync`/`deliver` runs resume that saved session instead of logging in
+  fresh; if it's ever invalid/expired, they fail loudly and ask the host to re-run the bootstrap
+  step, rather than retrying indefinitely.
+- **Rationale**: Live testing against the real site (2026-09-05) showed Outdoorsy's login requires
+  solving an hCaptcha-style tile challenge and entering an emailed one-time verification code —
+  both of which need a human, and neither of which this project (or Claude) will attempt to solve
+  or bypass. A "log in fresh every scheduled run" design (the original assumption in this document
+  and in plan.md) is therefore not viable unattended. Session resumption keeps the human step to an
+  occasional manual bootstrap rather than blocking every run.
+- **Alternatives considered**: Automating past the CAPTCHA/verification step — rejected outright,
+  out of scope for both policy and practical reasons (CAPTCHAs exist specifically to resist this).
+  Keeping the original fresh-login design and simply accepting scheduled runs will usually fail —
+  rejected; that would make the core feature (hands-off delivery) unreliable by design. A
+  third-party CAPTCHA-solving service — rejected; introduces a paid, ToS-questionable dependency for
+  a personal single-listing tool, and doesn't solve the emailed-code step anyway.
 
 ## Automation execution location (cloud vs. local agent)
 

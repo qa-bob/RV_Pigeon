@@ -1,24 +1,31 @@
-import { chromium, Browser, Page } from "playwright";
+import { createInterface } from "node:readline/promises";
+import { chromium, Browser, BrowserContext, Page } from "playwright";
 import type { PlatformAdapter, PlatformSession } from "../adapter.interface";
-import type { OutdoorsyCredentials } from "../credential-store";
+import { loadCredentials } from "../credential-store";
+import { saveSessionState, loadSessionState } from "../sessionStore";
 import type { PlatformReservation } from "@rv-pigeon/shared";
 
-// ⚠️ PLACEHOLDER SELECTORS. These have NOT been verified against the live
-// Outdoorsy site — they're a structural best guess. Before trusting this
-// adapter, run `npm run dry-run` in agent/ against your real account, and
-// use `npx playwright codegen https://www.outdoorsy.com/login` (and the
-// host reservations/messages pages) to capture the real selectors and
-// update this block. Per Constitution Principle II, every Outdoorsy-specific
-// detail (URLs, selectors, page structure) must live only in this file —
-// nothing outside agent/src/adapters/outdoorsy.ts should ever need to change
-// when Outdoorsy's site changes.
+// ⚠️ PARTIALLY VERIFIED SELECTORS. The login-through-"Bookings" flow below
+// (SELECTORS.homepageUrl through bookingsLinkName) was captured with real
+// Playwright codegen against the live site on 2026-09-05 and should be
+// accurate. Everything past that point (reservation rows, a trip's message
+// thread) is STILL a placeholder guess — codegen only ran as far as the
+// Bookings list. Before trusting listReservations/postMessage, record a
+// further codegen session from the Bookings page into an individual trip's
+// message thread and update those selectors too. Per Constitution
+// Principle II, every Outdoorsy-specific detail lives only in this file.
 const SELECTORS = {
-  loginUrl: "https://www.outdoorsy.com/login",
-  emailInput: 'input[name="email"]',
-  passwordInput: 'input[name="password"]',
-  loginSubmit: 'button[type="submit"]',
-  loginSuccessIndicator: '[data-testid="host-dashboard"]',
-  reservationsUrl: "https://www.outdoorsy.com/host/reservations",
+  homepageUrl: "https://www.outdoorsy.com/",
+  closeModalLabel: "Close Modal",
+  logInButtonName: "Log in",
+  emailTextboxName: "Email address Email address",
+  passwordTextboxName: "Password Password Show",
+  logInSubmitName: "Log in", // exact match, distinguishes from the nav button of the same name
+  switchToHostingLinkName: "Switch to hosting",
+  acceptCookiesText: "Accept cookies",
+  bookingsLinkName: "Bookings",
+
+  // Still placeholders — see file header.
   reservationRow: '[data-testid="reservation-row"]',
   reservationExternalId: '[data-testid="reservation-id"]',
   reservationGuestFirstName: '[data-testid="guest-first-name"]',
@@ -36,6 +43,7 @@ const SELECTORS = {
 interface OutdoorsySession extends PlatformSession {
   platform: "outdoorsy";
   browser: Browser;
+  context: BrowserContext;
   page: Page;
 }
 
@@ -47,33 +55,62 @@ function mapStatus(rawStatus: string): PlatformReservation["status"] {
   return "booked";
 }
 
+/** Best-effort dismiss of a banner/modal that may or may not be present. */
+async function dismissIfPresent(page: Page, locate: () => ReturnType<Page["getByLabel"]>) {
+  try {
+    await locate().click({ timeout: 3_000 });
+  } catch {
+    // Not present — fine.
+  }
+}
+
+/** Ensures the page is in the hosting view (Bookings visible), not the guest view. */
+async function ensureHostingView(page: Page): Promise<void> {
+  const bookingsLink = page.getByRole("link", { name: SELECTORS.bookingsLinkName });
+  const alreadyHosting = await bookingsLink.isVisible().catch(() => false);
+  if (alreadyHosting) return;
+
+  await page.getByRole("link", { name: SELECTORS.switchToHostingLinkName }).click();
+  await dismissIfPresent(page, () => page.getByText(SELECTORS.acceptCookiesText));
+  await bookingsLink.waitFor({ timeout: 30_000 });
+}
+
 export const outdoorsyAdapter: PlatformAdapter = {
-  async login(credentials: OutdoorsyCredentials): Promise<PlatformSession> {
-    // Dry-run mode (npm run dry-run) sets RV_PIGEON_HEADLESS=false so you can
-    // watch the browser and visually confirm the adapter against the real site.
+  async login(): Promise<PlatformSession> {
+    const storageState = loadSessionState();
+    // Resuming a session needs no human input, so this stays headless by
+    // default; set RV_PIGEON_HEADLESS=false (as dry-run does) if you want to
+    // watch it for debugging.
     const headless = process.env.RV_PIGEON_HEADLESS !== "false";
     const browser = await chromium.launch({ headless });
-    const page = await browser.newPage();
+    const context = await browser.newContext({ storageState: storageState as any });
+    const page = await context.newPage();
+
     try {
-      await page.goto(SELECTORS.loginUrl);
-      await page.fill(SELECTORS.emailInput, credentials.username);
-      await page.fill(SELECTORS.passwordInput, credentials.password);
-      await page.click(SELECTORS.loginSubmit);
-      await page.waitForSelector(SELECTORS.loginSuccessIndicator, { timeout: 30_000 });
+      await page.goto(SELECTORS.homepageUrl);
+      const loggedIn = await page
+        .getByRole("button", { name: SELECTORS.logInButtonName })
+        .isHidden({ timeout: 10_000 })
+        .catch(() => false);
+      if (!loggedIn) {
+        throw new Error("Session appears expired (a Log in button is still showing)");
+      }
+      await ensureHostingView(page);
     } catch (err) {
       await browser.close();
       throw new Error(
-        "Outdoorsy login failed (page layout may have changed, or a CAPTCHA/2FA " +
-          `challenge appeared): ${(err as Error).message}`,
+        "Resuming the saved Outdoorsy session failed — it has likely expired. Re-run " +
+          `"npm run bootstrap-session" in agent/. Details: ${(err as Error).message}`,
       );
     }
-    const session: OutdoorsySession = { platform: "outdoorsy", browser, page };
+
+    const session: OutdoorsySession = { platform: "outdoorsy", browser, context, page };
     return session;
   },
 
   async listReservations(session: PlatformSession): Promise<PlatformReservation[]> {
     const { page } = session as OutdoorsySession;
-    await page.goto(SELECTORS.reservationsUrl);
+    await page.getByRole("link", { name: SELECTORS.bookingsLinkName }).click();
     await page.waitForSelector(SELECTORS.reservationRow, { timeout: 30_000 }).catch(() => {
       // No reservations is a valid state, not a failure — fall through with an empty list.
     });
@@ -143,3 +180,45 @@ export const outdoorsyAdapter: PlatformAdapter = {
     await (session as OutdoorsySession).browser.close();
   },
 };
+
+/**
+ * One-time (or as-needed) manual bootstrap: opens a VISIBLE browser,
+ * auto-fills your saved email/password to save retyping, then pauses for
+ * you to do the parts that require a human — solving the CAPTCHA, entering
+ * the emailed verification code, switching to hosting, dismissing the
+ * cookie banner. Once you confirm you're on the Bookings page, it saves the
+ * resulting authenticated session (encrypted, local-only) for routine
+ * sync/deliver runs to reuse. Run via `npm run bootstrap-session`.
+ */
+export async function bootstrapOutdoorsySession(): Promise<void> {
+  const credentials = loadCredentials();
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(SELECTORS.homepageUrl);
+  await dismissIfPresent(page, () => page.getByLabel(SELECTORS.closeModalLabel));
+  await page.getByRole("button", { name: SELECTORS.logInButtonName }).click();
+  await page.getByRole("textbox", { name: SELECTORS.emailTextboxName }).fill(credentials.username);
+  await page
+    .getByRole("textbox", { name: SELECTORS.passwordTextboxName })
+    .fill(credentials.password);
+  await page.getByRole("button", { name: SELECTORS.logInSubmitName, exact: true }).click();
+
+  console.log("\nOver to you in the browser window:");
+  console.log("  1. Solve the CAPTCHA if one appears.");
+  console.log("  2. Enter the emailed verification code if asked.");
+  console.log('  3. Click "Switch to hosting" and dismiss the cookie banner if it shows.');
+  console.log('  4. Make sure you can see the "Bookings" link/page.');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  await rl.question("\nOnce you're on the Bookings page, press Enter here to continue...");
+  rl.close();
+
+  await ensureHostingView(page);
+
+  const storageState = await context.storageState();
+  saveSessionState(storageState);
+  await browser.close();
+
+  console.log("Session saved and encrypted locally (Windows DPAPI, CurrentUser).");
+}
