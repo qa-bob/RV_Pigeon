@@ -9,7 +9,17 @@ export async function runDeliver(): Promise<void> {
     return;
   }
 
-  const session = await outdoorsyAdapter.login();
+  // login() used to be outside any try/catch here, which meant a session
+  // failure propagated uncaught all the way to the bottom of this file with
+  // no console output at all.
+  let session: Awaited<ReturnType<typeof outdoorsyAdapter.login>>;
+  try {
+    session = await outdoorsyAdapter.login();
+  } catch (err) {
+    console.error("Could not log in to deliver messages:", (err as Error).message);
+    throw err;
+  }
+
   try {
     for (const message of due) {
       try {
@@ -34,5 +44,8 @@ export async function runDeliver(): Promise<void> {
 }
 
 if (require.main === module) {
-  runDeliver().catch(() => process.exit(1));
+  runDeliver().catch((err) => {
+    console.error("Fatal:", err instanceof Error ? err.message : err);
+    process.exit(1);
+  });
 }
