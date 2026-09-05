@@ -213,17 +213,22 @@ export const outdoorsyAdapter: PlatformAdapter = {
         .catch(() => {});
 
       const detail = await page.evaluate(
+        // Arrow-function consts, not `function` declarations: tsx/esbuild
+        // injects a `__name` helper call when it transpiles named function
+        // declarations, but page.evaluate() serializes this callback to a
+        // plain string that runs standalone in the browser — without that
+        // helper in scope, causing "ReferenceError: __name is not defined".
         ({ bookingIdLabel, startsLabel, endsLabel }) => {
           const textOf = (el: Element | null | undefined) => el?.textContent?.trim() ?? "";
           const ownTextIs = (el: Element, label: string) => textOf(el) === label;
 
-          function findValueAfterLabel(labelText: string): string | null {
+          const findValueAfterLabel = (labelText: string): string | null => {
             const candidates = Array.from(document.querySelectorAll("span"));
             const label = candidates.find((el) => ownTextIs(el, labelText));
             return label?.nextElementSibling ? textOf(label.nextElementSibling) : null;
-          }
+          };
 
-          function findDateTimeBlock(labelText: string): string | null {
+          const findDateTimeBlock = (labelText: string): string | null => {
             const candidates = Array.from(document.querySelectorAll("p"));
             const label = candidates.find((el) => ownTextIs(el, labelText));
             const container = label?.parentElement;
@@ -233,7 +238,7 @@ export const outdoorsyAdapter: PlatformAdapter = {
               .map(textOf)
               .filter(Boolean);
             return values.length ? values.join(" ") : null;
-          }
+          };
 
           return {
             bookingId: findValueAfterLabel(bookingIdLabel),
