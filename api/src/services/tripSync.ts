@@ -65,12 +65,16 @@ export async function syncTrips(
       continue;
     }
 
+    // Outdoorsy exposes no booking-creation timestamp anywhere in its host
+    // UI (confirmed 2026-09-05 — see research.md "Trip booked timestamp
+    // source"), so "trip booked" is defined as the moment RV_Pigeon itself
+    // first discovers the trip, not something scraped.
     const trip = await Trip.create({
       listingId: listing._id,
       externalTripId: input.externalTripId,
       guestFirstName: input.guestFirstName,
       guestLastName: input.guestLastName,
-      bookedAt: new Date(input.bookedAt),
+      bookedAt: new Date(),
       startAt: new Date(input.startAt),
       endAt: new Date(input.endAt),
       status: input.status,

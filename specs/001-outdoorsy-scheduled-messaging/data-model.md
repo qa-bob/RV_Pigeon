@@ -43,7 +43,7 @@ A reservation of a Listing by a guest, synced from Outdoorsy.
 | `listingId` | id (→ Listing) | |
 | `externalTripId` | string | Outdoorsy's reservation id; unique per Listing — used to upsert on sync and detect changes |
 | `guestFirstName` / `guestLastName` | string | for template variable substitution |
-| `bookedAt` | datetime | drives the `trip_booked` trigger |
+| `bookedAt` | datetime | drives the `trip_booked` trigger; set by the API to "now" the moment it first syncs this trip — Outdoorsy exposes no booking-creation timestamp anywhere in its host UI (confirmed 2026-09-05), so this is not scraped |
 | `startAt` / `endAt` | datetime | drive `trip_start`, `trip_three_quarter`, `trip_finish` triggers |
 | `status` | enum: `booked` \| `active` \| `completed` \| `cancelled` | |
 | `lastSyncedAt` | datetime | last time the agent confirmed this trip's data |

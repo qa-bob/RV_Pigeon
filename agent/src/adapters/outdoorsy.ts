@@ -7,15 +7,18 @@ import { loadCredentials } from "../credential-store";
 import { saveSessionState, loadSessionState } from "../sessionStore";
 import type { PlatformReservation } from "@rv-pigeon/shared";
 
-// ⚠️ PARTIALLY VERIFIED SELECTORS. The login-through-Bookings-list flow
-// below was captured with real Playwright codegen / inspected HTML against
-// the live site on 2026-09-05 and should be accurate. The Bookings list
-// card, notably, does NOT expose a trip id or booking date anywhere in its
-// HTML — Outdoorsy only shows those on a trip's own detail page (reached
-// via "View booking"), which hasn't been inspected yet. reservationExternalId
-// and reservationBookedAt below are therefore still placeholders, along
-// with everything about a trip's message thread. Per Constitution
+// ⚠️ PARTIALLY VERIFIED SELECTORS. Everything through reservationFieldBlock
+// was captured with real Playwright codegen / inspected HTML against the
+// live site on 2026-09-05 and should be accurate, including the Bookings
+// list card and a trip's own detail page. A trip's MESSAGE THREAD has not
+// been inspected yet — tripMessageThreadUrl/messageComposer/
+// messageSendButton are still placeholder guesses. Per Constitution
 // Principle II, every Outdoorsy-specific detail lives only in this file.
+//
+// Note: neither the list card nor the detail page shows a booking-creation
+// timestamp anywhere — Outdoorsy just doesn't expose one in the host UI.
+// "trip booked" is therefore defined as when RV_Pigeon's own API first syncs
+// the trip (see api/src/services/tripSync.ts), not something scraped here.
 const SELECTORS = {
   homepageUrl: "https://www.outdoorsy.com/",
   closeModalLabel: "Close Modal",
@@ -34,20 +37,25 @@ const SELECTORS = {
   bookingsLinkName: "Bookings",
   bookingsUrl: "https://www.outdoorsy.com/dashboard/bookings",
 
-  // Real, from inspected HTML (2026-09-05): each row is a `div.cursor-pointer`
-  // direct child of the bookings grid, scoped here by containing a "Starts"
-  // label so this doesn't accidentally match unrelated clickable elements
-  // elsewhere on the page.
+  // Bookings LIST card: each row is a `div.cursor-pointer` direct child of
+  // the bookings grid, scoped here by containing a "Starts" label so this
+  // doesn't accidentally match unrelated clickable elements on the page.
   reservationRow: "div.cursor-pointer",
   reservationRowAnchorText: "Starts",
   reservationGuestName: "p.text-lg.font-medium.capitalize.text-primary",
   reservationStatus: '[role="status"]',
-  // Field label -> value pairs, in the fixed order Outdoorsy renders them.
-  reservationFieldBlock: '[class*="max-w-"]',
 
-  // Still placeholders — no id/date exists on the list view (see header).
-  reservationExternalId: '[data-testid="reservation-id"]',
-  reservationBookedAt: '[data-testid="booked-at"]',
+  // Trip DETAIL page ("View booking" / clicking a row): only the Booking ID
+  // and the precise start/end date+time live here, not on the list. Read by
+  // matching the actual visible label text ("Booking ID", "Starts", "Ends")
+  // rather than Outdoorsy's internal build-hashed CSS classes, which are far
+  // more likely to change between deploys than the label wording itself.
+  detailUrlPattern: /\/dashboard\/bookings\/\d+/,
+  detailBookingIdLabel: "Booking ID",
+  detailStartsLabel: "Starts",
+  detailEndsLabel: "Ends",
+
+  // Still a placeholder — not inspected yet.
   tripMessageThreadUrl: (externalTripId: string) =>
     `https://www.outdoorsy.com/host/reservations/${externalTripId}/messages`,
   messageComposer: '[data-testid="message-composer"]',
@@ -77,15 +85,11 @@ function splitGuestName(fullName: string): { firstName: string; lastName: string
   return { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
 }
 
-/**
- * Outdoorsy renders each date as plain text like "Oct 15, 2026" (no
- * machine-readable datetime attribute) and shows no time-of-day, so this
- * resolves to local midnight on that date.
- */
-function parseCardDate(text: string): string {
+/** Parses the detail page's combined "Thu, Oct 15, 2026 12:00 pm" text into an ISO string. */
+function parseDetailDateTime(text: string): string {
   const parsed = new Date(text.trim());
   if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`Could not parse date text "${text}"`);
+    throw new Error(`Could not parse date/time text "${text}"`);
   }
   return parsed.toISOString();
 }
@@ -168,61 +172,78 @@ export const outdoorsyAdapter: PlatformAdapter = {
         `Couldn't open Bookings (screenshot saved to ${screenshotPath}): ${(err as Error).message}`,
       );
     }
-    const rows = await page
-      .locator(SELECTORS.reservationRow)
-      .filter({ has: page.getByText(SELECTORS.reservationRowAnchorText, { exact: true }) })
-      .all();
+    const rowLocator = () =>
+      page
+        .locator(SELECTORS.reservationRow)
+        .filter({ has: page.getByText(SELECTORS.reservationRowAnchorText, { exact: true }) });
 
+    const rowCount = await rowLocator().count();
     const reservations: PlatformReservation[] = [];
 
-    for (const row of rows) {
-      // TODO(externalTripId, bookedAt): not present anywhere in the Bookings
-      // list card — only on a trip's own detail page ("View booking"), not
-      // yet inspected. Every row is currently skipped below until that's
-      // captured; see SELECTORS' header comment.
-      const externalTripId = await row
-        .locator(SELECTORS.reservationExternalId)
-        .textContent()
-        .catch(() => null);
-      if (!externalTripId) {
-        continue;
-      }
+    for (let i = 0; i < rowCount; i++) {
+      // Re-query fresh each pass: navigating to a trip's detail page and
+      // back re-renders the list, detaching any previously-held handles.
+      const row = rowLocator().nth(i);
 
       const guestFullName = (await row.locator(SELECTORS.reservationGuestName).first().textContent()) ?? "";
       const { firstName: guestFirstName, lastName: guestLastName } = splitGuestName(guestFullName);
-
       const rawStatus = (await row.locator(SELECTORS.reservationStatus).first().textContent()) ?? "";
 
-      // Each labeled block is <p>Label</p><p>Value</p>, e.g. "Starts" / "Oct 15, 2026".
-      const fields = await row.evaluate((rowEl, blockSelector) => {
-        const map: Record<string, string> = {};
-        for (const block of Array.from(rowEl.querySelectorAll(blockSelector))) {
-          const ps = block.querySelectorAll("p");
-          const label = ps[0]?.textContent?.trim();
-          const value = ps[1]?.textContent?.trim();
-          if (label) map[label] = value ?? "";
-        }
-        return map;
-      }, SELECTORS.reservationFieldBlock);
+      await row.click();
+      await page.waitForURL(SELECTORS.detailUrlPattern, { timeout: 15_000 }).catch(() => {
+        // If the URL doesn't change as expected, the extraction below will
+        // simply come back empty and this row gets skipped — not fatal.
+      });
 
-      if (!fields.Starts || !fields.Ends) {
+      const detail = await page.evaluate(
+        ({ bookingIdLabel, startsLabel, endsLabel }) => {
+          const textOf = (el: Element | null | undefined) => el?.textContent?.trim() ?? "";
+          const ownTextIs = (el: Element, label: string) => textOf(el) === label;
+
+          function findValueAfterLabel(labelText: string): string | null {
+            const candidates = Array.from(document.querySelectorAll("span"));
+            const label = candidates.find((el) => ownTextIs(el, labelText));
+            return label?.nextElementSibling ? textOf(label.nextElementSibling) : null;
+          }
+
+          function findDateTimeBlock(labelText: string): string | null {
+            const candidates = Array.from(document.querySelectorAll("p"));
+            const label = candidates.find((el) => ownTextIs(el, labelText));
+            const container = label?.parentElement;
+            if (!container) return null;
+            const values = Array.from(container.querySelectorAll("p"))
+              .slice(1)
+              .map(textOf)
+              .filter(Boolean);
+            return values.length ? values.join(" ") : null;
+          }
+
+          return {
+            bookingId: findValueAfterLabel(bookingIdLabel),
+            startsText: findDateTimeBlock(startsLabel),
+            endsText: findDateTimeBlock(endsLabel),
+          };
+        },
+        {
+          bookingIdLabel: SELECTORS.detailBookingIdLabel,
+          startsLabel: SELECTORS.detailStartsLabel,
+          endsLabel: SELECTORS.detailEndsLabel,
+        },
+      );
+
+      await page.goBack();
+      await page.waitForSelector(SELECTORS.reservationRow, { timeout: 15_000 }).catch(() => {});
+
+      if (!detail.bookingId || !detail.startsText || !detail.endsText) {
         continue; // Couldn't confidently parse this row — skip rather than send bad data upstream.
       }
 
-      const startAt = parseCardDate(fields.Starts);
-      const endAt = parseCardDate(fields.Ends);
-      const bookedAt = await row
-        .locator(SELECTORS.reservationBookedAt)
-        .textContent()
-        .catch(() => null);
-
       reservations.push({
-        externalTripId,
+        externalTripId: detail.bookingId,
         guestFirstName,
         guestLastName,
-        bookedAt: bookedAt ? parseCardDate(bookedAt) : startAt,
-        startAt,
-        endAt,
+        startAt: parseDetailDateTime(detail.startsText),
+        endAt: parseDetailDateTime(detail.endsText),
         status: mapStatus(rawStatus),
       });
     }

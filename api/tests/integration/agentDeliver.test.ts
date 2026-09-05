@@ -38,7 +38,8 @@ async function seedDueMessage(token: string, authHeader: [string, string]) {
           externalTripId: "trip-due-1",
           guestFirstName: "Jermey",
           guestLastName: "",
-          bookedAt: "2020-01-01T00:00:00.000Z", // long past -> already due
+          // bookedAt is server-assigned (now) on creation; offsetAmount: 0
+          // above means this template's ScheduledMessage is due immediately.
           startAt: "2020-01-05T00:00:00.000Z",
           endAt: "2020-01-08T00:00:00.000Z",
           status: "booked",

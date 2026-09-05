@@ -108,7 +108,6 @@ export interface AgentSyncTripInput {
   externalTripId: string;
   guestFirstName: string;
   guestLastName: string;
-  bookedAt: string;
   startAt: string;
   endAt: string;
   status: TripStatus;
@@ -148,7 +147,6 @@ export interface PlatformReservation {
   externalTripId: string;
   guestFirstName: string;
   guestLastName: string;
-  bookedAt: string;
   startAt: string;
   endAt: string;
   status: TripStatus;

@@ -26,6 +26,24 @@ entry below for what changed and why.
   third-party CAPTCHA-solving service — rejected; introduces a paid, ToS-questionable dependency for
   a personal single-listing tool, and doesn't solve the emailed-code step anyway.
 
+## Trip booked timestamp source
+
+- **Decision**: `Trip.bookedAt` is set by the API to the current time at the moment it first syncs a
+  given trip (in `tripSync.ts`, on create) rather than being scraped from Outdoorsy and sent by the
+  agent.
+- **Rationale**: Neither the Bookings list card nor a trip's own detail page shows a
+  booking-creation timestamp anywhere in Outdoorsy's host UI (checked directly, 2026-09-05) — there
+  is nothing to scrape. Redefining "trip booked" as "since RV_Pigeon found out about it" is a
+  reasonable, honest substitute given the sync interval (30–60 min, per "Local agent scheduling
+  mechanism" below): in practice it lands close to the real booking time for any `trip_booked`
+  template, without inventing data that doesn't exist.
+- **Alternatives considered**: Trying harder to find a hidden booking timestamp (e.g. in page
+  metadata or an internal API response) — rejected as scraping brittleness for a field that may
+  simply not be exposed to hosts at all; not worth the fragility for a "welcome message" trigger
+  that already has same-effect alternatives (`trip_start` with a "before" offset). Requiring the
+  host to manually enter a booked-on date per trip — rejected, reintroduces the manual-entry burden
+  this project exists to remove.
+
 ## Automation execution location (cloud vs. local agent)
 
 - **Decision**: The Outdoorsy-facing automation (login, reservation scrape, message post) runs as
