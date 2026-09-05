@@ -133,9 +133,13 @@ export const outdoorsyAdapter: PlatformAdapter = {
       // saves the session right after you've already switched to hosting
       // mode, so that preference should already be baked into these cookies.
       await page.goto(SELECTORS.bookingsUrl);
+      // isVisible() checks once immediately rather than waiting — on a
+      // client-rendered SPA that's often before anything has mounted yet.
+      // waitFor() actually polls until it appears (or times out).
       const onBookings = await page
         .getByRole("link", { name: SELECTORS.bookingsLinkName, exact: true })
-        .isVisible({ timeout: 15_000 })
+        .waitFor({ state: "visible", timeout: 20_000 })
+        .then(() => true)
         .catch(() => false);
       if (!onBookings) {
         throw new Error(
