@@ -31,12 +31,12 @@ Four packages at the repository root, per plan.md: `web/`, `api/`, `agent/`, `sh
 
 **Purpose**: Repository/tooling initialization
 
-- [ ] T001 Create the four-package layout (`web/`, `api/`, `agent/`, `shared/`), each with its own `package.json` and `tsconfig.json`, per plan.md Project Structure
-- [ ] T002 [P] Configure a shared ESLint + Prettier config consumed by all four packages
-- [ ] T003 [P] Initialize `shared/src/types/index.ts` as a placeholder export, built and consumable by `web`, `api`, and `agent`
-- [ ] T004 Create `api/.env.example` and `agent/.env.example` documenting `MONGODB_URI`, `JWT_SECRET`, `AGENT_SERVICE_TOKEN` (api) / `SERVICE_TOKEN` (agent), per quickstart.md prerequisites
-- [ ] T005 [P] Configure Jest (`ts-jest`) in `api/` with `tests/unit/` and `tests/integration/` folders
-- [ ] T006 [P] Install and configure Playwright in `agent/` (`playwright.config.ts`, plus a codegen script used to build/debug the Outdoorsy adapter)
+- [X] T001 Create the four-package layout (`web/`, `api/`, `agent/`, `shared/`), each with its own `package.json` and `tsconfig.json`, per plan.md Project Structure
+- [X] T002 [P] Configure a shared ESLint + Prettier config consumed by all four packages
+- [X] T003 [P] Initialize `shared/src/types/index.ts` as a placeholder export, built and consumable by `web`, `api`, and `agent`
+- [X] T004 Create `api/.env.example` and `agent/.env.example` documenting `MONGODB_URI`, `JWT_SECRET`, `AGENT_SERVICE_TOKEN` (api) / `SERVICE_TOKEN` (agent), per quickstart.md prerequisites
+- [X] T005 [P] Configure Jest (`ts-jest`) in `api/` with `tests/unit/` and `tests/integration/` folders
+- [X] T006 [P] Install and configure Playwright in `agent/` (`playwright.config.ts`, plus a codegen script used to build/debug the Outdoorsy adapter)
 
 ---
 
@@ -46,7 +46,7 @@ Four packages at the repository root, per plan.md: `web/`, `api/`, `agent/`, `sh
 
 **⚠️ CRITICAL**: No user story work starts until this phase is complete
 
-- [ ] T007 [P] Define shared TypeScript types (Trip, Listing, MessageTemplate, ScheduledMessage, AgentActivityLog, and the dashboard-api/agent-api request/response shapes) in `shared/src/types/`
+- [X] T007 [P] Define shared TypeScript types (Trip, Listing, MessageTemplate, ScheduledMessage, AgentActivityLog, and the dashboard-api/agent-api request/response shapes) in `shared/src/types/`
 - [ ] T008 Implement the MongoDB connection module in `api/src/db.ts`, reading `MONGODB_URI`
 - [ ] T009 [P] Implement the Host model (`email`, `passwordHash`) in `api/src/models/host.ts`
 - [ ] T010 [P] Implement the Listing model in `api/src/models/listing.ts`, including `guestInstructions` (5000/170-char limits) and `carGuide` (5000-char tips + FAQ array) sub-schemas per data-model.md

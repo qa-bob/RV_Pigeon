@@ -1,0 +1,28 @@
+{
+  "name": "rv-pigeon",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "api",
+    "agent",
+    "web"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:shared": "npm run build -w shared",
+    "test:api": "npm run test -w api",
+    "lint": "eslint .",
+    "format": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.3",
+    "typescript-eslint": "^8.3.0"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
+  }
+}

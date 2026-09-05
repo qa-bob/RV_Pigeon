@@ -1,0 +1,28 @@
+{
+  "name": "@rv-pigeon/agent",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "sync": "tsx src/sync.ts",
+    "deliver": "tsx src/deliver.ts",
+    "dry-run": "tsx src/dryRun.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@rv-pigeon/shared": "*",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.46.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.46.0",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.5.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.4",
+    "tsx": "^4.16.2",
+    "typescript": "^5.6.0"
+  }
+}
