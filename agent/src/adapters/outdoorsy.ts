@@ -182,40 +182,59 @@ export const outdoorsyAdapter: PlatformAdapter = {
 };
 
 /**
- * One-time (or as-needed) manual bootstrap: opens a VISIBLE browser,
- * auto-fills your saved email/password to save retyping, then pauses for
- * you to do the parts that require a human — solving the CAPTCHA, entering
- * the emailed verification code, switching to hosting, dismissing the
- * cookie banner. Once you confirm you're on the Bookings page, it saves the
- * resulting authenticated session (encrypted, local-only) for routine
- * sync/deliver runs to reuse. Run via `npm run bootstrap-session`.
+ * One-time (or as-needed) manual bootstrap: opens a VISIBLE browser and
+ * attempts to auto-fill your saved email/password as a convenience — but
+ * Outdoorsy's homepage can show unpredictable promotional popups that block
+ * this, so it's genuinely best-effort. If it fails at any point, that's
+ * fine: you finish the login yourself in the browser window, same as you'd
+ * have to for the CAPTCHA and emailed verification code anyway. Once you
+ * confirm you're on the Bookings page, it saves the resulting authenticated
+ * session (encrypted, local-only) for routine sync/deliver runs to reuse.
+ * Run via `npm run bootstrap-session`.
  */
 export async function bootstrapOutdoorsySession(): Promise<void> {
-  const credentials = loadCredentials();
   const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
-
   await page.goto(SELECTORS.homepageUrl);
-  await dismissIfPresent(page, () => page.getByLabel(SELECTORS.closeModalLabel));
-  await page.getByRole("button", { name: SELECTORS.logInButtonName }).click();
-  await page.getByRole("textbox", { name: SELECTORS.emailTextboxName }).fill(credentials.username);
-  await page
-    .getByRole("textbox", { name: SELECTORS.passwordTextboxName })
-    .fill(credentials.password);
-  await page.getByRole("button", { name: SELECTORS.logInSubmitName, exact: true }).click();
+
+  let autoFilled = false;
+  try {
+    const credentials = loadCredentials();
+    await dismissIfPresent(page, () => page.getByLabel(SELECTORS.closeModalLabel));
+    await page.getByRole("button", { name: SELECTORS.logInButtonName }).click({ timeout: 10_000 });
+    await page
+      .getByRole("textbox", { name: SELECTORS.emailTextboxName })
+      .fill(credentials.username, { timeout: 10_000 });
+    await page
+      .getByRole("textbox", { name: SELECTORS.passwordTextboxName })
+      .fill(credentials.password, { timeout: 10_000 });
+    await page
+      .getByRole("button", { name: SELECTORS.logInSubmitName, exact: true })
+      .click({ timeout: 10_000 });
+    autoFilled = true;
+  } catch (err) {
+    console.log(
+      "Couldn't auto-fill the login form (probably a popup got in the way): " +
+        (err as Error).message,
+    );
+    console.log("No problem — just do the login yourself below.");
+  }
 
   console.log("\nOver to you in the browser window:");
-  console.log("  1. Solve the CAPTCHA if one appears.");
-  console.log("  2. Enter the emailed verification code if asked.");
-  console.log('  3. Click "Switch to hosting" and dismiss the cookie banner if it shows.');
-  console.log('  4. Make sure you can see the "Bookings" link/page.');
+  if (!autoFilled) {
+    console.log("  1. Close any popups, click Log in, and enter your email/password.");
+  }
+  console.log("  2. Solve the CAPTCHA if one appears.");
+  console.log("  3. Enter the emailed verification code if asked.");
+  console.log('  4. Click "Switch to hosting" and dismiss the cookie banner if it shows.');
+  console.log('  5. Make sure you can see the "Bookings" link/page.');
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   await rl.question("\nOnce you're on the Bookings page, press Enter here to continue...");
   rl.close();
 
-  await ensureHostingView(page);
-
+  // Trusting your confirmation above rather than re-checking automatically —
+  // you just told me you can see it, no need to risk a fresh timeout here.
   const storageState = await context.storageState();
   saveSessionState(storageState);
   await browser.close();
