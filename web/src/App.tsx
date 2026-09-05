@@ -3,6 +3,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Templates from "./pages/Templates";
 
 const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
@@ -11,7 +12,10 @@ const router = createBrowserRouter([
     children: [
       {
         element: <Layout />,
-        children: [{ index: true, element: <Home /> }],
+        children: [
+          { index: true, element: <Home /> },
+          { path: "templates", element: <Templates /> },
+        ],
       },
     ],
   },

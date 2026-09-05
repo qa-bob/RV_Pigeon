@@ -1,4 +1,5 @@
 import { Schema, model, Types, InferSchemaType } from "mongoose";
+import { toJSONOptions } from "./schemaOptions";
 
 const TRIGGER_EVENTS = [
   "trip_booked",
@@ -24,15 +25,25 @@ const messageTemplateSchema = new Schema(
     },
     active: { type: Boolean, required: true, default: true },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: toJSONOptions },
 );
 
-messageTemplateSchema.pre("validate", function (next) {
+interface ApplicabilityFields {
+  applicability?: { allListings?: boolean; listingIds?: unknown[] };
+  invalidate: (path: string, message: string) => void;
+}
+
+messageTemplateSchema.pre("validate", function (this: ApplicabilityFields, next) {
   const allListings = this.applicability?.allListings ?? true;
   const listingIds = this.applicability?.listingIds ?? [];
   if (!allListings && listingIds.length === 0) {
-    next(new Error("applicability.listingIds must be non-empty when allListings is false"));
-    return;
+    // this.invalidate (rather than next(err)) makes Mongoose fold this into
+    // the same ValidationError as its built-in field validators, so routes
+    // only need to handle one error type.
+    this.invalidate(
+      "applicability.listingIds",
+      "must be non-empty when allListings is false",
+    );
   }
   next();
 });

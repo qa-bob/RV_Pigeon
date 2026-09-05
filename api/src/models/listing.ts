@@ -1,4 +1,5 @@
 import { Schema, model, Types, InferSchemaType } from "mongoose";
+import { toJSONOptions } from "./schemaOptions";
 
 const faqSchema = new Schema(
   {
@@ -22,7 +23,7 @@ const listingSchema = new Schema(
       faqs: { type: [faqSchema], default: [] },
     },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: toJSONOptions },
 );
 
 listingSchema.index({ hostId: 1, externalListingId: 1 }, { unique: true });

@@ -1,4 +1,5 @@
 import { Schema, model, Types, InferSchemaType } from "mongoose";
+import { toJSONOptions } from "./schemaOptions";
 
 const TRIP_STATUSES = ["booked", "active", "completed", "cancelled"] as const;
 
@@ -14,7 +15,7 @@ const tripSchema = new Schema(
     status: { type: String, enum: TRIP_STATUSES, required: true, default: "booked" },
     lastSyncedAt: { type: Date, required: true, default: () => new Date() },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: toJSONOptions },
 );
 
 tripSchema.index({ listingId: 1, externalTripId: 1 }, { unique: true });

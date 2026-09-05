@@ -1,4 +1,5 @@
 import { Schema, model, Types, InferSchemaType } from "mongoose";
+import { toJSONOptions } from "./schemaOptions";
 
 const SCHEDULED_MESSAGE_STATUSES = ["scheduled", "sent", "skipped"] as const;
 const SKIP_REASONS = ["host_manual", "trip_cancelled"] as const;
@@ -13,7 +14,7 @@ const scheduledMessageSchema = new Schema(
     sentAt: { type: Date, default: null },
     skipReason: { type: String, enum: SKIP_REASONS, default: null },
   },
-  { timestamps: true },
+  { timestamps: true, toJSON: toJSONOptions },
 );
 
 scheduledMessageSchema.index({ tripId: 1, templateId: 1 }, { unique: true });

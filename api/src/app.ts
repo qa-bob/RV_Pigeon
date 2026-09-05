@@ -1,6 +1,11 @@
 import express, { ErrorRequestHandler } from "express";
 import cors from "cors";
 import { authRouter } from "./routes/auth";
+import { templatesRouter } from "./routes/templates";
+import { listingsRouter } from "./routes/listings";
+import { agentRouter } from "./routes/agent";
+import { dashboardAuth } from "./middleware/dashboardAuth";
+import { agentAuth } from "./middleware/agentAuth";
 
 export function createApp() {
   const app = express();
@@ -10,6 +15,9 @@ export function createApp() {
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
   app.use("/api/auth", authRouter);
+  app.use("/api/templates", dashboardAuth, templatesRouter);
+  app.use("/api/listings", dashboardAuth, listingsRouter);
+  app.use("/agent", agentAuth, agentRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     console.error(err);

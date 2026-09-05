@@ -81,28 +81,28 @@ conversation without any manual host action (quickstart.md scenarios 1–2).
 
 > Write these first; confirm they fail before implementing.
 
-- [ ] T024 [P] [US1] Unit tests for trigger-time computation — all 4 trigger events × before/after offsets, plus the "already past when discovered" edge case — in `api/tests/unit/triggerTime.test.ts`
-- [ ] T025 [P] [US1] Unit tests for template variable rendering, including the missing-variable-renders-blank case, in `api/tests/unit/renderTemplate.test.ts`
-- [ ] T026 [P] [US1] Integration tests for template CRUD (2000-char body limit, listing-applicability validation) in `api/tests/integration/templates.test.ts`
-- [ ] T027 [P] [US1] Integration test for `POST /agent/sync-trips` creating new Trips and generating ScheduledMessage rows from active applicable templates, in `api/tests/integration/agentSyncCreate.test.ts`
-- [ ] T028 [P] [US1] Integration test for `GET /agent/due-messages` and `POST /agent/report-result` (sent path), in `api/tests/integration/agentDeliver.test.ts`
+- [X] T024 [P] [US1] Unit tests for trigger-time computation — all 4 trigger events × before/after offsets, plus the "already past when discovered" edge case — in `api/tests/unit/triggerTime.test.ts`
+- [X] T025 [P] [US1] Unit tests for template variable rendering, including the missing-variable-renders-blank case, in `api/tests/unit/renderTemplate.test.ts`
+- [X] T026 [P] [US1] Integration tests for template CRUD (2000-char body limit, listing-applicability validation) in `api/tests/integration/templates.test.ts`
+- [X] T027 [P] [US1] Integration test for `POST /agent/sync-trips` creating new Trips and generating ScheduledMessage rows from active applicable templates, in `api/tests/integration/agentSyncCreate.test.ts`
+- [X] T028 [P] [US1] Integration test for `GET /agent/due-messages` and `POST /agent/report-result` (sent path), in `api/tests/integration/agentDeliver.test.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T029 [US1] Implement the trigger-time computation service in `api/src/services/triggerTime.ts` — makes T024 pass
-- [ ] T030 [US1] Implement the template-rendering service in `api/src/services/renderTemplate.ts` — makes T025 pass
-- [ ] T031 [US1] Implement `GET/POST/PATCH /api/templates` routes in `api/src/routes/templates.ts` — makes T026 pass; depends on T012
-- [ ] T032 [US1] Implement `GET/POST/PATCH /api/listings` routes in `api/src/routes/listings.ts`, covering `label`, `externalListingId`, `guestInstructions`, `carGuide` — depends on T010
-- [ ] T033 [US1] Implement the trip-sync ingestion service (create path) in `api/src/services/tripSync.ts`: upsert new Trips by `externalTripId`, generate ScheduledMessage rows from active applicable MessageTemplates — makes T027 pass; depends on T011, T013, T029
-- [ ] T034 [US1] Implement `POST /agent/sync-trips` in `api/src/routes/agent.ts`, wiring the tripSync service — depends on T033, T016
-- [ ] T035 [US1] Implement `GET /agent/due-messages` in `api/src/routes/agent.ts` (status=scheduled, sendAt≤now, rendered via renderTemplate) — depends on T030
-- [ ] T036 [US1] Implement `POST /agent/report-result` (sent path: set status/sentAt) in `api/src/routes/agent.ts` — makes T028 pass
-- [ ] T037 [US1] Implement the Outdoorsy adapter's `login` and `listReservations` methods (Playwright) in `agent/src/adapters/outdoorsy.ts` — validate via the manual dry-run mode from quickstart.md, per Constitution Principle VI
-- [ ] T038 [US1] Implement the Outdoorsy adapter's `postMessage` method in `agent/src/adapters/outdoorsy.ts`
-- [ ] T039 [US1] Implement `agent/src/sync.ts` (credential-store → `adapter.listReservations` → `POST /agent/sync-trips`)
-- [ ] T040 [US1] Implement `agent/src/deliver.ts` (`GET /agent/due-messages` → `adapter.postMessage` → `POST /agent/report-result`)
-- [ ] T041 [US1] Implement `agent/src/index.ts` entrypoint (runs sync then deliver) for Windows Task Scheduler invocation
-- [ ] T042 [US1] Build the web Templates page (list/create/edit/activate-deactivate) in `web/src/pages/Templates.tsx` and `web/src/components/TemplateEditor.tsx`
+- [X] T029 [US1] Implement the trigger-time computation service in `api/src/services/triggerTime.ts` — makes T024 pass
+- [X] T030 [US1] Implement the template-rendering service in `api/src/services/renderTemplate.ts` — makes T025 pass
+- [X] T031 [US1] Implement `GET/POST/PATCH /api/templates` routes in `api/src/routes/templates.ts` — makes T026 pass; depends on T012
+- [X] T032 [US1] Implement `GET/POST/PATCH /api/listings` routes in `api/src/routes/listings.ts`, covering `label`, `externalListingId`, `guestInstructions`, `carGuide` — depends on T010
+- [X] T033 [US1] Implement the trip-sync ingestion service (create path) in `api/src/services/tripSync.ts`: upsert new Trips by `externalTripId`, generate ScheduledMessage rows from active applicable MessageTemplates — makes T027 pass; depends on T011, T013, T029
+- [X] T034 [US1] Implement `POST /agent/sync-trips` in `api/src/routes/agent.ts`, wiring the tripSync service — depends on T033, T016
+- [X] T035 [US1] Implement `GET /agent/due-messages` in `api/src/routes/agent.ts` (status=scheduled, sendAt≤now, rendered via renderTemplate) — depends on T030
+- [X] T036 [US1] Implement `POST /agent/report-result` (sent path: set status/sentAt) in `api/src/routes/agent.ts` — makes T028 pass
+- [X] T037 [US1] Implement the Outdoorsy adapter's `login` and `listReservations` methods (Playwright) in `agent/src/adapters/outdoorsy.ts` — validate via the manual dry-run mode from quickstart.md, per Constitution Principle VI **(⚠️ selectors are unverified placeholders — see file header comment; must be corrected against the real site before live use)**
+- [X] T038 [US1] Implement the Outdoorsy adapter's `postMessage` method in `agent/src/adapters/outdoorsy.ts` **(same selector caveat as T037)**
+- [X] T039 [US1] Implement `agent/src/sync.ts` (credential-store → `adapter.listReservations` → `POST /agent/sync-trips`)
+- [X] T040 [US1] Implement `agent/src/deliver.ts` (`GET /agent/due-messages` → `adapter.postMessage` → `POST /agent/report-result`)
+- [X] T041 [US1] Implement `agent/src/index.ts` entrypoint (runs sync then deliver) for Windows Task Scheduler invocation
+- [X] T042 [US1] Build the web Templates page (list/create/edit/activate-deactivate) in `web/src/pages/Templates.tsx` and `web/src/components/TemplateEditor.tsx`
 
 **Checkpoint**: User Story 1 is fully functional and independently testable/demoable.
 

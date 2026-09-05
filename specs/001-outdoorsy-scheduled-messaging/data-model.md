@@ -13,6 +13,8 @@ access remains a future, non-breaking addition rather than a rewrite.
 | `_id` | id | |
 | `email` | string | unique; used to log into the dashboard |
 | `passwordHash` | string | bcrypt hash; never exposed via any API response |
+| `firstName` | string, optional | renders the `{{HOST_FIRST_NAME}}` template variable |
+| `phoneNumber` | string, optional | renders the `{{HOST_PHONE_NUMBER}}` template variable |
 | `createdAt` / `updatedAt` | datetime | |
 
 ## Listing
