@@ -1,4 +1,6 @@
 import { createInterface } from "node:readline/promises";
+import { mkdirSync } from "node:fs";
+import { homedir } from "node:os";
 import { chromium, Browser, BrowserContext, Page } from "playwright";
 import type { PlatformAdapter, PlatformSession } from "../adapter.interface";
 import { loadCredentials } from "../credential-store";
@@ -55,6 +57,19 @@ function mapStatus(rawStatus: string): PlatformReservation["status"] {
   return "booked";
 }
 
+const DEBUG_SCREENSHOT_DIR = `${homedir()}\\.rv-pigeon\\debug-screenshots`;
+
+/** Saves a screenshot on failure so you can see what actually happened, without needing to have been watching. */
+async function captureDebugScreenshot(page: Page, label: string): Promise<string> {
+  mkdirSync(DEBUG_SCREENSHOT_DIR, { recursive: true });
+  const path = `${DEBUG_SCREENSHOT_DIR}\\${label}-${Date.now()}.png`;
+  await page.screenshot({ path, fullPage: true }).catch(() => {
+    // If even the screenshot fails (e.g., page/context already closed), don't
+    // let that mask the original error.
+  });
+  return path;
+}
+
 /** Best-effort dismiss of a banner/modal that may or may not be present. */
 async function dismissIfPresent(page: Page, locate: () => ReturnType<Page["getByLabel"]>) {
   try {
@@ -97,10 +112,12 @@ export const outdoorsyAdapter: PlatformAdapter = {
       }
       await ensureHostingView(page);
     } catch (err) {
+      const screenshotPath = await captureDebugScreenshot(page, "login-failed");
       await browser.close();
       throw new Error(
-        "Resuming the saved Outdoorsy session failed — it has likely expired. Re-run " +
-          `"npm run bootstrap-session" in agent/. Details: ${(err as Error).message}`,
+        "Resuming the saved Outdoorsy session failed — it has likely expired, or something " +
+          `unexpected (e.g. a popup) is blocking the page. Screenshot saved to ${screenshotPath} — ` +
+          `check it before assuming you need to re-run "npm run bootstrap-session". Details: ${(err as Error).message}`,
       );
     }
 
@@ -110,7 +127,14 @@ export const outdoorsyAdapter: PlatformAdapter = {
 
   async listReservations(session: PlatformSession): Promise<PlatformReservation[]> {
     const { page } = session as OutdoorsySession;
-    await page.getByRole("link", { name: SELECTORS.bookingsLinkName }).click();
+    try {
+      await page.getByRole("link", { name: SELECTORS.bookingsLinkName }).click({ timeout: 30_000 });
+    } catch (err) {
+      const screenshotPath = await captureDebugScreenshot(page, "list-reservations-failed");
+      throw new Error(
+        `Couldn't open Bookings (screenshot saved to ${screenshotPath}): ${(err as Error).message}`,
+      );
+    }
     await page.waitForSelector(SELECTORS.reservationRow, { timeout: 30_000 }).catch(() => {
       // No reservations is a valid state, not a failure — fall through with an empty list.
     });
@@ -169,8 +193,9 @@ export const outdoorsyAdapter: PlatformAdapter = {
       await page.click(SELECTORS.messageSendButton);
       await page.waitForTimeout(1000); // brief settle time for the send to register
     } catch (err) {
+      const screenshotPath = await captureDebugScreenshot(page, `post-message-failed-${externalTripId}`);
       throw new Error(
-        `Failed to post message for trip ${externalTripId} (page layout may have changed): ` +
+        `Failed to post message for trip ${externalTripId} (screenshot saved to ${screenshotPath}): ` +
           (err as Error).message,
       );
     }
