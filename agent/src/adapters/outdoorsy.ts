@@ -7,14 +7,14 @@ import { loadCredentials } from "../credential-store";
 import { saveSessionState, loadSessionState } from "../sessionStore";
 import type { PlatformReservation } from "@rv-pigeon/shared";
 
-// ⚠️ PARTIALLY VERIFIED SELECTORS. The login-through-"Bookings" flow below
-// (SELECTORS.homepageUrl through bookingsLinkName) was captured with real
-// Playwright codegen against the live site on 2026-09-05 and should be
-// accurate. Everything past that point (reservation rows, a trip's message
-// thread) is STILL a placeholder guess — codegen only ran as far as the
-// Bookings list. Before trusting listReservations/postMessage, record a
-// further codegen session from the Bookings page into an individual trip's
-// message thread and update those selectors too. Per Constitution
+// ⚠️ PARTIALLY VERIFIED SELECTORS. The login-through-Bookings-list flow
+// below was captured with real Playwright codegen / inspected HTML against
+// the live site on 2026-09-05 and should be accurate. The Bookings list
+// card, notably, does NOT expose a trip id or booking date anywhere in its
+// HTML — Outdoorsy only shows those on a trip's own detail page (reached
+// via "View booking"), which hasn't been inspected yet. reservationExternalId
+// and reservationBookedAt below are therefore still placeholders, along
+// with everything about a trip's message thread. Per Constitution
 // Principle II, every Outdoorsy-specific detail lives only in this file.
 const SELECTORS = {
   homepageUrl: "https://www.outdoorsy.com/",
@@ -34,15 +34,20 @@ const SELECTORS = {
   bookingsLinkName: "Bookings",
   bookingsUrl: "https://www.outdoorsy.com/dashboard/bookings",
 
-  // Still placeholders — see file header.
-  reservationRow: '[data-testid="reservation-row"]',
+  // Real, from inspected HTML (2026-09-05): each row is a `div.cursor-pointer`
+  // direct child of the bookings grid, scoped here by containing a "Starts"
+  // label so this doesn't accidentally match unrelated clickable elements
+  // elsewhere on the page.
+  reservationRow: "div.cursor-pointer",
+  reservationRowAnchorText: "Starts",
+  reservationGuestName: "p.text-lg.font-medium.capitalize.text-primary",
+  reservationStatus: '[role="status"]',
+  // Field label -> value pairs, in the fixed order Outdoorsy renders them.
+  reservationFieldBlock: '[class*="max-w-"]',
+
+  // Still placeholders — no id/date exists on the list view (see header).
   reservationExternalId: '[data-testid="reservation-id"]',
-  reservationGuestFirstName: '[data-testid="guest-first-name"]',
-  reservationGuestLastName: '[data-testid="guest-last-name"]',
   reservationBookedAt: '[data-testid="booked-at"]',
-  reservationStartAt: '[data-testid="trip-start"]',
-  reservationEndAt: '[data-testid="trip-end"]',
-  reservationStatus: '[data-testid="trip-status"]',
   tripMessageThreadUrl: (externalTripId: string) =>
     `https://www.outdoorsy.com/host/reservations/${externalTripId}/messages`,
   messageComposer: '[data-testid="message-composer"]',
@@ -61,7 +66,28 @@ function mapStatus(rawStatus: string): PlatformReservation["status"] {
   if (normalized.includes("cancel")) return "cancelled";
   if (normalized.includes("complete") || normalized.includes("finished")) return "completed";
   if (normalized.includes("active") || normalized.includes("in progress")) return "active";
+  // Real observed value (2026-09-05): "Confirmed" — falls through to "booked",
+  // which is correct for a reservation that hasn't started yet.
   return "booked";
+}
+
+/** Splits "Jeff Turner" -> ("Jeff", "Turner"), "mark van horn" -> ("mark", "van horn"). */
+function splitGuestName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/);
+  return { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
+}
+
+/**
+ * Outdoorsy renders each date as plain text like "Oct 15, 2026" (no
+ * machine-readable datetime attribute) and shows no time-of-day, so this
+ * resolves to local midnight on that date.
+ */
+function parseCardDate(text: string): string {
+  const parsed = new Date(text.trim());
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`Could not parse date text "${text}"`);
+  }
+  return parsed.toISOString();
 }
 
 const DEBUG_SCREENSHOT_DIR = `${homedir()}\\.rv-pigeon\\debug-screenshots`;
@@ -142,47 +168,59 @@ export const outdoorsyAdapter: PlatformAdapter = {
         `Couldn't open Bookings (screenshot saved to ${screenshotPath}): ${(err as Error).message}`,
       );
     }
-    await page.waitForSelector(SELECTORS.reservationRow, { timeout: 30_000 }).catch(() => {
-      // No reservations is a valid state, not a failure — fall through with an empty list.
-    });
+    const rows = await page
+      .locator(SELECTORS.reservationRow)
+      .filter({ has: page.getByText(SELECTORS.reservationRowAnchorText, { exact: true }) })
+      .all();
 
-    const rows = await page.$$(SELECTORS.reservationRow);
     const reservations: PlatformReservation[] = [];
 
     for (const row of rows) {
+      // TODO(externalTripId, bookedAt): not present anywhere in the Bookings
+      // list card — only on a trip's own detail page ("View booking"), not
+      // yet inspected. Every row is currently skipped below until that's
+      // captured; see SELECTORS' header comment.
       const externalTripId = await row
-        .$eval(SELECTORS.reservationExternalId, (el) => el.textContent?.trim() ?? "")
-        .catch(() => "");
-      const startAt = await row
-        .$eval(SELECTORS.reservationStartAt, (el) => el.getAttribute("datetime") ?? "")
-        .catch(() => "");
-      const endAt = await row
-        .$eval(SELECTORS.reservationEndAt, (el) => el.getAttribute("datetime") ?? "")
-        .catch(() => "");
-
-      if (!externalTripId || !startAt || !endAt) {
-        // Skip rows we can't confidently parse rather than sending bad data upstream.
+        .locator(SELECTORS.reservationExternalId)
+        .textContent()
+        .catch(() => null);
+      if (!externalTripId) {
         continue;
       }
 
-      const guestFirstName = await row
-        .$eval(SELECTORS.reservationGuestFirstName, (el) => el.textContent?.trim() ?? "")
-        .catch(() => "");
-      const guestLastName = await row
-        .$eval(SELECTORS.reservationGuestLastName, (el) => el.textContent?.trim() ?? "")
-        .catch(() => "");
+      const guestFullName = (await row.locator(SELECTORS.reservationGuestName).first().textContent()) ?? "";
+      const { firstName: guestFirstName, lastName: guestLastName } = splitGuestName(guestFullName);
+
+      const rawStatus = (await row.locator(SELECTORS.reservationStatus).first().textContent()) ?? "";
+
+      // Each labeled block is <p>Label</p><p>Value</p>, e.g. "Starts" / "Oct 15, 2026".
+      const fields = await row.evaluate((rowEl, blockSelector) => {
+        const map: Record<string, string> = {};
+        for (const block of Array.from(rowEl.querySelectorAll(blockSelector))) {
+          const ps = block.querySelectorAll("p");
+          const label = ps[0]?.textContent?.trim();
+          const value = ps[1]?.textContent?.trim();
+          if (label) map[label] = value ?? "";
+        }
+        return map;
+      }, SELECTORS.reservationFieldBlock);
+
+      if (!fields.Starts || !fields.Ends) {
+        continue; // Couldn't confidently parse this row — skip rather than send bad data upstream.
+      }
+
+      const startAt = parseCardDate(fields.Starts);
+      const endAt = parseCardDate(fields.Ends);
       const bookedAt = await row
-        .$eval(SELECTORS.reservationBookedAt, (el) => el.getAttribute("datetime") ?? "")
-        .catch(() => "");
-      const rawStatus = await row
-        .$eval(SELECTORS.reservationStatus, (el) => el.textContent?.trim() ?? "")
-        .catch(() => "");
+        .locator(SELECTORS.reservationBookedAt)
+        .textContent()
+        .catch(() => null);
 
       reservations.push({
         externalTripId,
         guestFirstName,
         guestLastName,
-        bookedAt: bookedAt || startAt,
+        bookedAt: bookedAt ? parseCardDate(bookedAt) : startAt,
         startAt,
         endAt,
         status: mapStatus(rawStatus),
