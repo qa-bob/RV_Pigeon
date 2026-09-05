@@ -26,12 +26,10 @@ const SELECTORS = {
   emailTextboxName: "Email address Email address",
   passwordTextboxName: "Password Password Show",
   logInSubmitName: "Log in", // exact match, distinguishes from the nav button of the same name
-  switchToHostingLinkName: "Switch to hosting",
-  acceptCookiesText: "Accept cookies",
   // Two different real links both match a fuzzy name of "Bookings" — the
   // sidebar nav item (exact text "Bookings", filtered to ?tab=Pending) and a
-  // "View all bookings" CTA. bookingsLinkName + exact:true targets only the
-  // former (used just as an "are we in hosting mode" visibility check);
+  // "View all bookings" CTA. bookingsLinkName + exact:true is used as the
+  // "are we really looking at the hosting dashboard" check in login();
   // bookingsUrl navigates directly to the latter's unfiltered URL, which is
   // what we actually want for listing every reservation regardless of status.
   bookingsLinkName: "Bookings",
@@ -116,17 +114,6 @@ async function dismissIfPresent(page: Page, locate: () => ReturnType<Page["getBy
   }
 }
 
-/** Ensures the page is in the hosting view (Bookings visible), not the guest view. */
-async function ensureHostingView(page: Page): Promise<void> {
-  const bookingsLink = page.getByRole("link", { name: SELECTORS.bookingsLinkName, exact: true });
-  const alreadyHosting = await bookingsLink.isVisible().catch(() => false);
-  if (alreadyHosting) return;
-
-  await page.getByRole("link", { name: SELECTORS.switchToHostingLinkName }).click();
-  await dismissIfPresent(page, () => page.getByText(SELECTORS.acceptCookiesText));
-  await bookingsLink.waitFor({ timeout: 30_000 });
-}
-
 export const outdoorsyAdapter: PlatformAdapter = {
   async login(): Promise<PlatformSession> {
     const storageState = loadSessionState();
@@ -139,15 +126,23 @@ export const outdoorsyAdapter: PlatformAdapter = {
     const page = await context.newPage();
 
     try {
-      await page.goto(SELECTORS.homepageUrl);
-      const loggedIn = await page
-        .getByRole("button", { name: SELECTORS.logInButtonName })
-        .isHidden({ timeout: 10_000 })
+      // Go straight to the dashboard we actually need, rather than the
+      // public marketing homepage (which has no hosting-related nav at
+      // all — that was the actual bug behind an earlier "Switch to
+      // hosting" timeout, not an expired session). bootstrapOutdoorsySession
+      // saves the session right after you've already switched to hosting
+      // mode, so that preference should already be baked into these cookies.
+      await page.goto(SELECTORS.bookingsUrl);
+      const onBookings = await page
+        .getByRole("link", { name: SELECTORS.bookingsLinkName, exact: true })
+        .isVisible({ timeout: 15_000 })
         .catch(() => false);
-      if (!loggedIn) {
-        throw new Error("Session appears expired (a Log in button is still showing)");
+      if (!onBookings) {
+        throw new Error(
+          "Not looking at the Bookings dashboard after navigating there directly " +
+            "(session may be expired, or hosting mode didn't carry over from the saved session)",
+        );
       }
-      await ensureHostingView(page);
     } catch (err) {
       const screenshotPath = await captureDebugScreenshot(page, "login-failed");
       await browser.close();
