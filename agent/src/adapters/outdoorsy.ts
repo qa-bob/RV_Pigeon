@@ -176,6 +176,17 @@ export const outdoorsyAdapter: PlatformAdapter = {
         .locator(SELECTORS.reservationRow)
         .filter({ has: page.getByText(SELECTORS.reservationRowAnchorText, { exact: true }) });
 
+    // The nav shell renders quickly, but the actual reservation cards load
+    // async after that — count() (like isVisible()) checks once immediately
+    // rather than waiting, so without this the list often reads as empty
+    // even when reservations exist. No matches within the timeout is still
+    // treated as "zero reservations" rather than an error, since that's a
+    // valid real state too.
+    await rowLocator()
+      .first()
+      .waitFor({ state: "visible", timeout: 20_000 })
+      .catch(() => {});
+
     const rowCount = await rowLocator().count();
     const reservations: PlatformReservation[] = [];
 
