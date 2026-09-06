@@ -163,12 +163,12 @@ sees the update while a guest on a different listing sees that listing's own sep
 
 **Purpose**: Fail-loud visibility and finishing work that spans all user stories
 
-- [ ] T056 [P] Implement `GET /api/activity` in `api/src/routes/activity.ts` and `POST /agent/report-sync-failure` in `api/src/routes/agent.ts` (Constitution Principle V, spec FR-015/SC-006)
-- [ ] T057 Wire failure reporting into `agent/src/sync.ts`, `agent/src/deliver.ts`, and `api/src/services/tripSync.ts` so every login/scrape/delivery failure writes an AgentActivityLog entry
-- [ ] T058 [P] Build the web dashboard failure banner (reads `GET /api/activity`) in `web/src/components/ActivityBanner.tsx`
-- [ ] T059 Write `agent/scripts/register-task.ps1` documenting/automating the Windows Task Scheduler entry for `agent/src/index.ts`
-- [ ] T060 [P] Write the repository root `README.md`: 4-package structure, setup steps (linking quickstart.md), and a summary of the constitution's binding principles
-- [ ] T061 Run through quickstart.md end-to-end against a real Outdoorsy test listing and record the results
+- [X] T056 [P] Implement `GET /api/activity` in `api/src/routes/activity.ts` and `POST /agent/report-sync-failure` in `api/src/routes/agent.ts` (Constitution Principle V, spec FR-015/SC-006) — `report-sync-failure` was already built ahead of schedule during US1
+- [X] T057 Wire failure reporting into `agent/src/sync.ts`, `agent/src/deliver.ts`, and `api/src/services/tripSync.ts` so every login/scrape/delivery failure writes an AgentActivityLog entry — found and fixed one real gap: `deliver.ts`'s own login failure was going completely unreported before this
+- [X] T058 [P] Build the web dashboard failure banner (reads `GET /api/activity`) in `web/src/components/ActivityBanner.tsx`
+- [X] T059 Write `agent/scripts/register-task.ps1` documenting/automating the Windows Task Scheduler entry for `agent/src/index.ts`
+- [X] T060 [P] Write the repository root `README.md`: 4-package structure, setup steps (linking quickstart.md), and a summary of the constitution's binding principles
+- [ ] T061 Run through quickstart.md end-to-end against a real Outdoorsy test listing and record the results — **pending**: blocked on the Outdoorsy Cloudflare-block cooldown from earlier; the project owner needs to re-verify `sync`/`deliver` against the live account once it's safe to test again
 
 ---
 

@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearToken } from "../services/apiClient";
+import { ActivityBanner } from "./ActivityBanner";
 
 const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
   marginRight: "1rem",
@@ -41,6 +42,7 @@ export function Layout() {
         </nav>
         <button onClick={handleLogout}>Sign out</button>
       </header>
+      <ActivityBanner />
       <main style={{ padding: "1.5rem" }}>
         <Outlet />
       </main>

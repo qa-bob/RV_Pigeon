@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { outdoorsyAdapter } from "./adapters/outdoorsy";
-import { getDueMessages, reportResult } from "./apiClient";
+import { getDueMessages, reportResult, reportSyncFailure } from "./apiClient";
 
 export async function runDeliver(): Promise<void> {
   const due = await getDueMessages();
@@ -16,7 +16,14 @@ export async function runDeliver(): Promise<void> {
   try {
     session = await outdoorsyAdapter.login();
   } catch (err) {
-    console.error("Could not log in to deliver messages:", (err as Error).message);
+    const detail = (err as Error).message;
+    console.error("Could not log in to deliver messages:", detail);
+    // Unlike sync's login failure, this used to go unreported to the
+    // activity log entirely — a host watching the dashboard would see
+    // nothing at all for a delivery-blocking login failure.
+    await reportSyncFailure({ detail }).catch((reportErr) => {
+      console.error("Additionally failed to report the login failure to the API:", reportErr);
+    });
     throw err;
   }
 
