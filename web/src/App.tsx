@@ -6,6 +6,8 @@ import Home from "./pages/Home";
 import Templates from "./pages/Templates";
 import Trips from "./pages/Trips";
 import Schedule from "./pages/Schedule";
+import Listings from "./pages/Listings";
+import ListingContent from "./pages/ListingContent";
 
 const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
@@ -19,6 +21,8 @@ const router = createBrowserRouter([
           { path: "templates", element: <Templates /> },
           { path: "trips", element: <Trips /> },
           { path: "trips/:tripId", element: <Schedule /> },
+          { path: "listings", element: <Listings /> },
+          { path: "listings/:listingId", element: <ListingContent /> },
         ],
       },
     ],

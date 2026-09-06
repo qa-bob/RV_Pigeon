@@ -147,13 +147,13 @@ sees the update while a guest on a different listing sees that listing's own sep
 
 ### Tests for User Story 3
 
-- [ ] T052 [P] [US3] Integration test confirming Guest Instructions/Car Guide updates are scoped to one listing and do not leak to another, in `api/tests/integration/listingContentScope.test.ts`
+- [X] T052 [P] [US3] Integration test confirming Guest Instructions/Car Guide updates are scoped to one listing and do not leak to another, in `api/tests/integration/listingContentScope.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T053 [US3] Extend `PATCH /api/listings/:id` validation (from T032) to enforce the 5000/170/5000-char limits and FAQ array shape with clear error messages — makes T052 pass
-- [ ] T054 [US3] Build the web Listing content editor (pickup/return instructions, welcome message, car guide tips, repeatable FAQ list) in `web/src/pages/ListingContent.tsx` and `web/src/components/FaqListEditor.tsx`
-- [ ] T055 [US3] Build the web Listings page (select a listing to view/edit) in `web/src/pages/Listings.tsx`
+- [X] T053 [US3] Extend `PATCH /api/listings/:id` validation (from T032) to enforce the 5000/170/5000-char limits and FAQ array shape with clear error messages — makes T052 pass. **No new code needed** — the Mongoose schema constraints from T010 (Foundational) and the generic PATCH handler from T032 (US1) already enforced all of this; T052's test passed against the existing implementation unmodified.
+- [X] T054 [US3] Build the web Listing content editor (pickup/return instructions, welcome message, car guide tips, repeatable FAQ list) in `web/src/pages/ListingContent.tsx` and `web/src/components/FaqListEditor.tsx`
+- [X] T055 [US3] Build the web Listings page (select a listing to view/edit) in `web/src/pages/Listings.tsx` — also gained a "create listing" form here, since nothing else in the web app could create one before now (T032's route existed but had no UI; `npm run seed:listing` was the only prior option)
 
 **Checkpoint**: All three user stories independently functional.
 
