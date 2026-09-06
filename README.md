@@ -26,11 +26,15 @@ Four packages, per `specs/001-outdoorsy-scheduled-messaging/plan.md`:
 **Why the agent runs locally, not in AWS**: keeps Outdoorsy login traffic on your normal
 residential IP instead of a datacenter IP (lower bot-detection risk), and keeps your Outdoorsy
 credentials/session off cloud infrastructure entirely. See `specs/.../research.md` for the full
-reasoning, including a real live-testing finding: **Outdoorsy requires solving a CAPTCHA and an
-emailed verification code at login**, so the agent never logs in fresh on its own — a human
-completes that once (`npm run bootstrap-session`), and the resulting session is reused and
-periodically refreshed. Data: MongoDB (Atlas). Infra: your own AWS account (S3+CloudFront for the
-web app, EC2/Fargate for the API).
+reasoning, including two real live-testing findings: **Outdoorsy requires solving a CAPTCHA and an
+emailed verification code at login** (so the agent never logs in fresh on its own — a human
+completes that once via `npm run bootstrap-session`, and the resulting session is reused and
+periodically refreshed), and **headless Chromium specifically trips Outdoorsy's bot-detection**
+(confirmed by a hard "you have been blocked" page on a headless run moments after a headed one
+succeeded cleanly). The agent therefore always runs headed; the scheduled entrypoint just positions
+the window off-screen instead, which means Task Scheduler needs an active logged-in session to
+render anything at all — see `agent/scripts/register-task.ps1`. Data: MongoDB (Atlas). Infra: your
+own AWS account (S3+CloudFront for the web app, EC2/Fargate for the API).
 
 ## Project governance
 

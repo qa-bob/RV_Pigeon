@@ -1,9 +1,10 @@
 # Research: Outdoorsy Scheduled Guest Messaging
 
 All items below were resolved through direct discussion with the project owner before this plan
-was drafted; none carry a `NEEDS CLARIFICATION` marker into Phase 1. One item (Login session
-strategy) was added after implementation began, once real site behavior was observed — see its own
-entry below for what changed and why.
+was drafted; none carry a `NEEDS CLARIFICATION` marker into Phase 1. A few items ("Login session
+strategy", "Headless vs. headed Chromium", "Trip booked timestamp source") were added or revised
+after implementation began, once real site behavior was observed — see each entry below for what
+changed and why.
 
 ## Login session strategy (fresh login vs. resumed session)
 
@@ -25,6 +26,32 @@ entry below for what changed and why.
   rejected; that would make the core feature (hands-off delivery) unreliable by design. A
   third-party CAPTCHA-solving service — rejected; introduces a paid, ToS-questionable dependency for
   a personal single-listing tool, and doesn't solve the emailed-code step anyway.
+
+## Headless vs. headed Chromium
+
+- **Decision**: The agent never launches truly headless Chromium against Outdoorsy. `login()`
+  defaults to headed; the unattended/scheduled entrypoint (`index.ts`) runs headed too, just with
+  the browser window positioned off-screen (`--window-position=-32000,-32000`) rather than hidden
+  via headless mode, so it doesn't visually interrupt the host. True headless remains available
+  (`RV_PIGEON_HEADLESS=true`) only as an opt-in for anyone who wants to experiment with it, with the
+  risk below understood.
+- **Rationale**: Confirmed via live testing (2026-09-06), not just theorized. `npm run dry-run`
+  (headed) completed cleanly, listing both real reservations. Moments later, `npm run sync`
+  (headless) hit a hard Cloudflare block ("Sorry, you have been blocked") on the exact same
+  machine/session — not the softer CAPTCHA-style challenge seen during initial login, an outright
+  refusal. Re-tested again after a multi-hour cooldown with the same result: headed clean, headless
+  blocked immediately after. This is strong evidence Outdoorsy's bot-detection specifically
+  fingerprints headless Chromium, independent of session validity or request volume.
+- **Consequence for Task Scheduler**: an off-screen browser window still needs an active, unlocked
+  desktop session to render at all, so `register-task.ps1` configures the task to run only while the
+  host is logged in (`LogonType Interactive`) — there is no "whether logged on or not" option here,
+  unlike a typical background task.
+- **Alternatives considered**: Stealth/anti-detection Playwright plugins to make headless mode less
+  fingerprintable — rejected for now as an added dependency in an adversarial arms race against
+  Cloudflare, when a simpler fix (just don't use headless) is available and already confirmed to
+  work. Accepting occasional hard blocks as a cost of doing business — rejected; repeated triggering
+  risks escalating to the host's actual Outdoorsy account being flagged, not just this script
+  failing.
 
 ## Trip booked timestamp source
 

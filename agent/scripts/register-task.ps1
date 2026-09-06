@@ -9,24 +9,22 @@
     1. npm run build   (compiles src/ to dist/ — re-run this after any code changes)
     2. Make sure agent/.env and your bootstrapped session are already set up.
 
-  If Outdoorsy's bot-detection turns out to specifically flag headless
-  Chromium (unconfirmed as of this writing — see research.md "Automation
-  execution location"), the workaround is: set RV_PIGEON_HEADLESS=false in
-  agent/.env, and re-run this script with -RequireLogon so the task only
-  fires while you're logged in (a real, briefly-visible browser window
-  needs an active desktop session to render at all).
+  Confirmed via live testing (2026-09-06), not just theorized: headless
+  Chromium specifically trips Outdoorsy's Cloudflare bot-detection (a hard
+  "you have been blocked" page) — a headed run moments earlier on the same
+  machine/session worked cleanly. index.ts therefore always runs headed,
+  with the browser window positioned off-screen rather than truly hidden,
+  so it doesn't pop up in front of you. That means this task genuinely
+  needs an active, logged-in desktop session to render anything at all —
+  there is no "run whether logged on or not" option here, unlike a typical
+  background task.
 
 .PARAMETER IntervalMinutes
   How often to run. Matches the 30–60 minute cadence from research.md.
-
-.PARAMETER RequireLogon
-  If set, the task only runs while you're logged in (required if you
-  switch to a non-headless agent). Default: runs whether logged on or not.
 #>
 param(
   [string]$TaskName = "RV_Pigeon Agent",
-  [int]$IntervalMinutes = 30,
-  [switch]$RequireLogon
+  [int]$IntervalMinutes = 30
 )
 
 $agentDir = Split-Path -Parent $PSScriptRoot
@@ -46,12 +44,7 @@ $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) `
   -RepetitionInterval (New-TimeSpan -Minutes $IntervalMinutes) `
   -RepetitionDuration ([TimeSpan]::MaxValue)
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-
-if ($RequireLogon) {
-  $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive
-} else {
-  $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U
-}
+$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
   -Settings $settings -Principal $principal `
@@ -59,5 +52,6 @@ Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
   -Force | Out-Null
 
 Write-Host "Registered scheduled task '$TaskName', running every $IntervalMinutes minutes."
+Write-Host "Runs only while you're logged in (an off-screen browser window still needs an active desktop session)."
 Write-Host "View/manage it: Get-ScheduledTask -TaskName '$TaskName' | Get-ScheduledTaskInfo"
 Write-Host "Remove it later with: Unregister-ScheduledTask -TaskName '$TaskName'"

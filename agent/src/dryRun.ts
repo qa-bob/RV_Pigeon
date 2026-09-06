@@ -7,6 +7,9 @@
 import "dotenv/config";
 import { outdoorsyAdapter } from "./adapters/outdoorsy";
 
+// Headed is already the default (see adapters/outdoorsy.ts); this just makes
+// dry-run's intent explicit and immune to whatever RV_PIGEON_HEADLESS is set
+// to in your .env for other purposes.
 process.env.RV_PIGEON_HEADLESS = "false";
 
 async function main() {

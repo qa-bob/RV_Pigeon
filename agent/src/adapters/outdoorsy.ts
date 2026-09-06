@@ -133,11 +133,21 @@ async function dismissIfPresent(page: Page, locate: () => ReturnType<Page["getBy
 export const outdoorsyAdapter: PlatformAdapter = {
   async login(): Promise<PlatformSession> {
     const storageState = loadSessionState();
-    // Resuming a session needs no human input, so this stays headless by
-    // default; set RV_PIGEON_HEADLESS=false (as dry-run does) if you want to
-    // watch it for debugging.
-    const headless = process.env.RV_PIGEON_HEADLESS !== "false";
-    const browser = await chromium.launch({ headless });
+    // Confirmed via live testing (2026-09-06), not just theorized: headless
+    // Chromium specifically trips Outdoorsy's Cloudflare bot-detection --
+    // `dry-run` (headed) worked cleanly moments before `sync` (headless) got
+    // hard-blocked, on the same machine/session. Headed is therefore the
+    // default everywhere now; true headless is opt-in only, for anyone who
+    // wants to experiment with it knowing that risk (RV_PIGEON_HEADLESS=true).
+    // For the unattended/scheduled path specifically, index.ts sets
+    // RV_PIGEON_OFFSCREEN=true instead, which keeps this real (headed)
+    // browser window from popping up in front of you every run.
+    const headless = process.env.RV_PIGEON_HEADLESS === "true";
+    const offscreen = process.env.RV_PIGEON_OFFSCREEN === "true";
+    const browser = await chromium.launch({
+      headless,
+      args: offscreen ? ["--window-position=-32000,-32000"] : [],
+    });
     const context = await browser.newContext({ storageState: storageState as any });
     await addNamePolyfill(context);
     const page = await context.newPage();
