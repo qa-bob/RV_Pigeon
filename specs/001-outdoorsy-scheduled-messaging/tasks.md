@@ -168,7 +168,7 @@ sees the update while a guest on a different listing sees that listing's own sep
 - [X] T058 [P] Build the web dashboard failure banner (reads `GET /api/activity`) in `web/src/components/ActivityBanner.tsx`
 - [X] T059 Write `agent/scripts/register-task.ps1` documenting/automating the Windows Task Scheduler entry for `agent/src/index.ts`
 - [X] T060 [P] Write the repository root `README.md`: 4-package structure, setup steps (linking quickstart.md), and a summary of the constitution's binding principles
-- [ ] T061 Run through quickstart.md end-to-end against a real Outdoorsy test listing and record the results — **pending**: blocked on the Outdoorsy Cloudflare-block cooldown from earlier; the project owner needs to re-verify `sync`/`deliver` against the live account once it's safe to test again
+- [X] T061 Run through quickstart.md end-to-end against a real Outdoorsy test listing and record the results — **verified 2026-09-06**: after switching to headed-by-default (see "Headless vs. headed Chromium" in research.md), `npm run sync` completed cleanly with no Cloudflare block, reporting "2 created, 0 updated." Confirmed directly against MongoDB: both real trips (Jeff Turner, mark van horn) persisted with correct guest names/dates/status, `bookedAt` set to the sync moment as designed, and a `ScheduledMessage` generated for each from the host's real "1 Hour after" trip_booked template with `sendAt` computed exactly 1 hour later. `deliver`/`postMessage` remain unverified — still placeholder selectors, deliberately not live-tested yet (see the adapter file's header comment).
 
 ---
 
