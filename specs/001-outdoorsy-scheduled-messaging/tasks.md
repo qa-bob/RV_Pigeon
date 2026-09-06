@@ -119,18 +119,18 @@ recompute/skip accordingly (quickstart.md scenario 3).
 
 ### Tests for User Story 2
 
-- [ ] T043 [P] [US2] Integration test for `POST /agent/sync-trips` recomputing `sendAt` on trip date changes and skipping pending messages when a trip becomes cancelled, in `api/tests/integration/agentSyncUpdate.test.ts`
-- [ ] T044 [P] [US2] Integration test for `GET /api/trips/:id/scheduled-messages` and the send-now/skip/skip-all-remaining routes, in `api/tests/integration/scheduleOverrides.test.ts`
+- [X] T043 [P] [US2] Integration test for `POST /agent/sync-trips` recomputing `sendAt` on trip date changes and skipping pending messages when a trip becomes cancelled, in `api/tests/integration/agentSyncUpdate.test.ts`
+- [X] T044 [P] [US2] Integration test for `GET /api/trips/:id/scheduled-messages` and the send-now/skip/skip-all-remaining routes, in `api/tests/integration/scheduleOverrides.test.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T045 [US2] Extend the tripSync service (`api/src/services/tripSync.ts`, from T033) with the update path: recompute `sendAt` on still-`scheduled` messages when trip dates change; set `status: skipped, skipReason: trip_cancelled` when a trip becomes cancelled — makes T043 pass
-- [ ] T046 [US2] Implement `GET /api/trips` and `GET /api/trips/:id/scheduled-messages` in `api/src/routes/trips.ts`
-- [ ] T047 [US2] Implement `POST /api/scheduled-messages/:id/send-now` in `api/src/routes/scheduledMessages.ts`
-- [ ] T048 [US2] Implement `POST /api/scheduled-messages/:id/skip` in `api/src/routes/scheduledMessages.ts` (`status: skipped, skipReason: host_manual`)
-- [ ] T049 [US2] Implement `POST /api/trips/:id/scheduled-messages/skip-all-remaining` in `api/src/routes/trips.ts` — makes T044 pass
-- [ ] T050 [US2] Build the web Schedule view (per-trip message list with status + Send now/Skip/Skip all remaining actions) in `web/src/pages/Schedule.tsx`
-- [ ] T051 [US2] Build the web Trips list page in `web/src/pages/Trips.tsx`
+- [X] T045 [US2] Extend the tripSync service (`api/src/services/tripSync.ts`, from T033) with the update path: recompute `sendAt` on still-`scheduled` messages when trip dates change; set `status: skipped, skipReason: trip_cancelled` when a trip becomes cancelled — makes T043 pass
+- [X] T046 [US2] Implement `GET /api/trips` and `GET /api/trips/:id/scheduled-messages` in `api/src/routes/trips.ts`
+- [X] T047 [US2] Implement `POST /api/scheduled-messages/:id/send-now` in `api/src/routes/scheduledMessages.ts`
+- [X] T048 [US2] Implement `POST /api/scheduled-messages/:id/skip` in `api/src/routes/scheduledMessages.ts` (`status: skipped, skipReason: host_manual`)
+- [X] T049 [US2] Implement `POST /api/trips/:id/scheduled-messages/skip-all-remaining` in `api/src/routes/trips.ts` — makes T044 pass
+- [X] T050 [US2] Build the web Schedule view (per-trip message list with status + Send now/Skip/Skip all remaining actions) in `web/src/pages/Schedule.tsx`
+- [X] T051 [US2] Build the web Trips list page in `web/src/pages/Trips.tsx`
 
 **Checkpoint**: User Stories 1 and 2 both independently functional.
 

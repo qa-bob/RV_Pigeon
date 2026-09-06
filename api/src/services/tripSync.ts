@@ -41,9 +41,66 @@ async function scheduleMessagesForNewTrip(
   }
 }
 
+async function updateExistingTrip(
+  tripId: string,
+  bookedAt: Date,
+  previousStatus: string,
+  previousStartAt: Date,
+  previousEndAt: Date,
+  input: AgentSyncTripInput,
+): Promise<void> {
+  const newStartAt = new Date(input.startAt);
+  const newEndAt = new Date(input.endAt);
+  const datesChanged =
+    previousStartAt.getTime() !== newStartAt.getTime() || previousEndAt.getTime() !== newEndAt.getTime();
+  const becameCancelled = input.status === "cancelled" && previousStatus !== "cancelled";
+
+  await Trip.updateOne(
+    { _id: tripId },
+    {
+      $set: {
+        guestFirstName: input.guestFirstName,
+        guestLastName: input.guestLastName,
+        startAt: newStartAt,
+        endAt: newEndAt,
+        status: input.status,
+        lastSyncedAt: new Date(),
+      },
+    },
+  );
+
+  if (becameCancelled) {
+    // Already-sent messages are untouched — they can't be un-sent, and
+    // status is a one-way terminal transition (see data-model.md).
+    await ScheduledMessage.updateMany(
+      { tripId, status: "scheduled" },
+      { $set: { status: "skipped", skipReason: "trip_cancelled" } },
+    );
+    return;
+  }
+
+  if (datesChanged) {
+    const pending = await ScheduledMessage.find({ tripId, status: "scheduled" }).populate("templateId");
+    for (const sm of pending) {
+      const template = sm.templateId as any;
+      sm.sendAt = computeSendAt(
+        { bookedAt, startAt: newStartAt, endAt: newEndAt },
+        {
+          triggerEvent: template.triggerEvent,
+          offsetAmount: template.offsetAmount,
+          offsetUnit: template.offsetUnit,
+          offsetDirection: template.offsetDirection,
+        },
+      );
+      await sm.save();
+    }
+  }
+}
+
 /**
- * Create path only (T033/US1). The update path — recomputing sendAt on date
- * changes and skipping on cancellation — is added in T045 (US2).
+ * Create path (T033/US1) plus the update path (T045/US2): recomputes sendAt
+ * on still-scheduled messages when a trip's dates change, and skips them
+ * when a trip becomes cancelled.
  */
 export async function syncTrips(
   hostId: string,
@@ -61,6 +118,14 @@ export async function syncTrips(
   for (const input of trips) {
     const existing = await Trip.findOne({ listingId: listing._id, externalTripId: input.externalTripId });
     if (existing) {
+      await updateExistingTrip(
+        existing._id.toString(),
+        existing.bookedAt,
+        existing.status,
+        existing.startAt,
+        existing.endAt,
+        input,
+      );
       updated += 1;
       continue;
     }

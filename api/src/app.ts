@@ -4,6 +4,8 @@ import { authRouter } from "./routes/auth";
 import { templatesRouter } from "./routes/templates";
 import { listingsRouter } from "./routes/listings";
 import { agentRouter } from "./routes/agent";
+import { tripsRouter } from "./routes/trips";
+import { scheduledMessagesRouter } from "./routes/scheduledMessages";
 import { dashboardAuth } from "./middleware/dashboardAuth";
 import { agentAuth } from "./middleware/agentAuth";
 
@@ -17,6 +19,8 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/templates", dashboardAuth, templatesRouter);
   app.use("/api/listings", dashboardAuth, listingsRouter);
+  app.use("/api/trips", dashboardAuth, tripsRouter);
+  app.use("/api/scheduled-messages", dashboardAuth, scheduledMessagesRouter);
   app.use("/agent", agentAuth, agentRouter);
 
   const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
