@@ -7,13 +7,16 @@ import { loadCredentials } from "../credential-store";
 import { saveSessionState, loadSessionState } from "../sessionStore";
 import type { PlatformReservation } from "@rv-pigeon/shared";
 
-// ⚠️ PARTIALLY VERIFIED SELECTORS. Everything through reservationFieldBlock
-// was captured with real Playwright codegen / inspected HTML against the
-// live site on 2026-09-05 and should be accurate, including the Bookings
-// list card and a trip's own detail page. A trip's MESSAGE THREAD has not
-// been inspected yet — tripMessageThreadUrl/messageComposer/
-// messageSendButton are still placeholder guesses. Per Constitution
-// Principle II, every Outdoorsy-specific detail lives only in this file.
+// All selectors below are real, captured via DevTools inspection / codegen
+// against the live site (2026-09-05/06) — none are placeholder guesses
+// anymore. Per Constitution Principle II, every Outdoorsy-specific detail
+// lives only in this file.
+//
+// Note on message threads: a trip's Booking ID does NOT double as its
+// message-thread id — Outdoorsy uses a separate conversation id, only
+// discoverable via a link on the trip's own detail page. postMessage()
+// therefore opens the detail page first to find that link before it can
+// open the actual thread.
 //
 // Note: neither the list card nor the detail page shows a booking-creation
 // timestamp anywhere — Outdoorsy just doesn't expose one in the host UI.
@@ -53,11 +56,14 @@ const SELECTORS = {
   detailStartsLabel: "Starts",
   detailEndsLabel: "Ends",
 
-  // Still a placeholder — not inspected yet.
-  tripMessageThreadUrl: (externalTripId: string) =>
-    `https://www.outdoorsy.com/host/reservations/${externalTripId}/messages`,
-  messageComposer: '[data-testid="message-composer"]',
-  messageSendButton: '[data-testid="message-send"]',
+  // Trip detail page, used only to discover the message-thread link (the
+  // "message-circle" icon link near the guest's phone number).
+  tripDetailUrl: (externalTripId: string) => `https://www.outdoorsy.com/dashboard/bookings/${externalTripId}`,
+  messageThreadLinkIconLabel: "message-circle icon",
+
+  // The message thread itself.
+  messageComposerPlaceholder: "Type your message",
+  messageSubmitButtonName: "Submit message button",
 };
 
 interface OutdoorsySession extends PlatformSession {
@@ -90,6 +96,16 @@ function parseDetailDateTime(text: string): string {
     throw new Error(`Could not parse date/time text "${text}"`);
   }
   return parsed.toISOString();
+}
+
+/** Polls `check` every 250ms until it returns true or `timeoutMs` elapses. */
+async function pollUntil(check: () => Promise<boolean>, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await check()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return false;
 }
 
 /**
@@ -303,10 +319,41 @@ export const outdoorsyAdapter: PlatformAdapter = {
   async postMessage(session: PlatformSession, externalTripId: string, body: string): Promise<void> {
     const { page } = session as OutdoorsySession;
     try {
-      await page.goto(SELECTORS.tripMessageThreadUrl(externalTripId));
-      await page.fill(SELECTORS.messageComposer, body);
-      await page.click(SELECTORS.messageSendButton);
-      await page.waitForTimeout(1000); // brief settle time for the send to register
+      // Hop 1: the trip's own detail page, just to discover its message-thread link.
+      await page.goto(SELECTORS.tripDetailUrl(externalTripId));
+      const messageLink = page
+        .locator("a")
+        .filter({ has: page.getByRole("img", { name: SELECTORS.messageThreadLinkIconLabel }) });
+      await messageLink.waitFor({ state: "visible", timeout: 20_000 });
+      const threadHref = await messageLink.getAttribute("href");
+      if (!threadHref) {
+        throw new Error("Found the message-thread link element but it has no href");
+      }
+
+      // Hop 2: the actual conversation.
+      await page.goto(threadHref);
+      const composer = page.getByPlaceholder(SELECTORS.messageComposerPlaceholder);
+      await composer.waitFor({ state: "visible", timeout: 20_000 });
+      await composer.fill(body);
+
+      // The submit button is disabled/hidden while the composer is empty;
+      // Playwright's click() auto-waits for it to become actionable once
+      // fill() above has populated the field.
+      await page.getByRole("button", { name: SELECTORS.messageSubmitButtonName }).click({ timeout: 15_000 });
+
+      // The composer clearing itself (staying visible, just emptied) is the
+      // best available signal that the send actually went through, since
+      // there's no separate confirmation banner. Polls manually rather than
+      // using waitFor(), which only supports visibility/attachment states,
+      // not a field's value.
+      const clearedInTime = await pollUntil(
+        async () => (await composer.inputValue().catch(() => "x")) === "",
+        10_000,
+      );
+      if (!clearedInTime) {
+        const value = await composer.inputValue().catch(() => null);
+        throw new Error(`Composer still contains text after submit — send may not have registered: "${value}"`);
+      }
     } catch (err) {
       const screenshotPath = await captureDebugScreenshot(page, `post-message-failed-${externalTripId}`);
       throw new Error(
