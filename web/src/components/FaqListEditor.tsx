@@ -19,22 +19,22 @@ export function FaqListEditor({ faqs, onChange }: Props) {
   }
 
   return (
-    <div>
+    <div className="stack">
       {faqs.map((faq, i) => (
-        <div key={i} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+        <div key={i} className="row">
           <input
             placeholder="Question"
             value={faq.question}
             onChange={(e) => updateFaq(i, "question", e.target.value)}
-            style={{ flex: 1 }}
+            style={{ flex: 1, width: "auto" }}
           />
           <input
             placeholder="Answer"
             value={faq.answer}
             onChange={(e) => updateFaq(i, "answer", e.target.value)}
-            style={{ flex: 1 }}
+            style={{ flex: 1, width: "auto" }}
           />
-          <button type="button" onClick={() => removeFaq(i)}>
+          <button type="button" className="btn-secondary" onClick={() => removeFaq(i)}>
             Remove
           </button>
         </div>

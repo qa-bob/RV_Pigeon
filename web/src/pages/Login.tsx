@@ -24,33 +24,39 @@ export default function Login() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "10vh auto", fontFamily: "sans-serif" }}>
-      <h1>RV_Pigeon</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoFocus
-          />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
+    <main className="login-page">
+      <div className="card login-card">
+        <img
+          src="/brand/rv-pigeon-logo-horizontal-on-cream.png"
+          alt="RV Pigeon"
+          className="login-card__logo"
+        />
+        <form onSubmit={handleSubmit}>
+          <label>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
+          {error && <p role="alert">{error}</p>}
+          <button type="submit" disabled={submitting}>
+            {submitting ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

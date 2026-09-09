@@ -36,35 +36,41 @@ export default function Listings() {
   if (loading) return <p>Loading…</p>;
 
   return (
-    <div>
+    <div className="page">
       <h2>Listings</h2>
-      <ul>
-        {listings.map((listing) => (
-          <li key={listing.id}>
-            {listing.label} — <Link to={`/listings/${listing.id}`}>Edit content</Link>
-          </li>
-        ))}
-      </ul>
-      {listings.length === 0 && <p>No listings yet.</p>}
+      <div className="card">
+        {listings.length > 0 && (
+          <ul className="listing-list">
+            {listings.map((listing) => (
+              <li key={listing.id}>
+                {listing.label} — <Link to={`/listings/${listing.id}`}>Edit content</Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {listings.length === 0 && <p>No listings yet.</p>}
+      </div>
 
-      <h3>Add a listing</h3>
-      <form onSubmit={handleCreate} style={{ display: "grid", gap: "0.5rem", maxWidth: 400 }}>
-        <label>
-          Label
-          <input value={label} onChange={(e) => setLabel(e.target.value)} required />
-        </label>
-        <label>
-          External listing id (your own identifier, e.g. "eclipse-milan" — must match this
-          listing's OUTDOORSY_LISTING_ID in agent/.env)
-          <input
-            value={externalListingId}
-            onChange={(e) => setExternalListingId(e.target.value)}
-            required
-          />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit">Add listing</button>
-      </form>
+      <div className="card">
+        <h3>Add a listing</h3>
+        <form onSubmit={handleCreate} className="form">
+          <label>
+            Label
+            <input value={label} onChange={(e) => setLabel(e.target.value)} required />
+          </label>
+          <label>
+            External listing id (your own identifier, e.g. "eclipse-milan" — must match this
+            listing's OUTDOORSY_LISTING_ID in agent/.env)
+            <input
+              value={externalListingId}
+              onChange={(e) => setExternalListingId(e.target.value)}
+              required
+            />
+          </label>
+          {error && <p role="alert">{error}</p>}
+          <button type="submit">Add listing</button>
+        </form>
+      </div>
     </div>
   );
 }

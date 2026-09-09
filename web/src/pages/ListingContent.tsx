@@ -53,49 +53,56 @@ export default function ListingContent() {
   if (!listing) return <p>Loading…</p>;
 
   return (
-    <div>
+    <div className="page">
       <p>
         <Link to="/listings">← Back to listings</Link>
       </p>
       <h2>{listing.label}</h2>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "1rem", maxWidth: 560 }}>
-        <label>
-          Pickup &amp; return instructions ({pickupReturnInstructions.length}/{LONG_TEXT_MAX})
-          <textarea
-            value={pickupReturnInstructions}
-            maxLength={LONG_TEXT_MAX}
-            onChange={(e) => setPickupReturnInstructions(e.target.value)}
-            rows={6}
-          />
-        </label>
+      <div className="card">
+        <form onSubmit={handleSubmit} className="form" style={{ maxWidth: 560 }}>
+          <label>
+            Pickup &amp; return instructions ({pickupReturnInstructions.length}/{LONG_TEXT_MAX})
+            <textarea
+              value={pickupReturnInstructions}
+              maxLength={LONG_TEXT_MAX}
+              onChange={(e) => setPickupReturnInstructions(e.target.value)}
+              rows={6}
+            />
+          </label>
 
-        <label>
-          Welcome message ({welcomeMessage.length}/{WELCOME_MAX})
-          <textarea
-            value={welcomeMessage}
-            maxLength={WELCOME_MAX}
-            onChange={(e) => setWelcomeMessage(e.target.value)}
-            rows={2}
-          />
-        </label>
+          <label>
+            Welcome message ({welcomeMessage.length}/{WELCOME_MAX})
+            <textarea
+              value={welcomeMessage}
+              maxLength={WELCOME_MAX}
+              onChange={(e) => setWelcomeMessage(e.target.value)}
+              rows={2}
+            />
+          </label>
 
-        <label>
-          Car guide tips ({tips.length}/{LONG_TEXT_MAX})
-          <textarea value={tips} maxLength={LONG_TEXT_MAX} onChange={(e) => setTips(e.target.value)} rows={6} />
-        </label>
+          <label>
+            Car guide tips ({tips.length}/{LONG_TEXT_MAX})
+            <textarea
+              value={tips}
+              maxLength={LONG_TEXT_MAX}
+              onChange={(e) => setTips(e.target.value)}
+              rows={6}
+            />
+          </label>
 
-        <div>
-          <h3>FAQs</h3>
-          <FaqListEditor faqs={faqs} onChange={setFaqs} />
-        </div>
+          <div>
+            <h3>FAQs</h3>
+            <FaqListEditor faqs={faqs} onChange={setFaqs} />
+          </div>
 
-        {error && <p role="alert">{error}</p>}
-        {saved && <p>Saved.</p>}
+          {error && <p role="alert">{error}</p>}
+          {saved && <p>Saved.</p>}
 
-        <button type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </button>
-      </form>
+          <button type="submit" disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

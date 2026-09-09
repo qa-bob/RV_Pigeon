@@ -53,45 +53,51 @@ export default function Schedule() {
   const hasPending = messages.some((m) => m.status === "scheduled");
 
   return (
-    <div>
+    <div className="page">
       <p>
         <Link to="/trips">← Back to trips</Link>
       </p>
-      <h2>Schedule</h2>
-      <button onClick={handleSkipAllRemaining} disabled={!hasPending}>
-        Skip all remaining
-      </button>
-      <table style={{ width: "100%", marginTop: "1rem", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left" }}>Message</th>
-            <th style={{ textAlign: "left" }}>Scheduled for</th>
-            <th style={{ textAlign: "left" }}>Status</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {messages.map((m) => (
-            <tr key={m.id}>
-              <td>{m.templateId.name}</td>
-              <td>{formatDate(m.sendAt)}</td>
-              <td>
-                {m.status}
-                {m.status === "skipped" && m.skipReason ? ` (${m.skipReason})` : ""}
-              </td>
-              <td>
-                {m.status === "scheduled" && (
-                  <>
-                    <button onClick={() => handleSendNow(m.id)}>Send now</button>{" "}
-                    <button onClick={() => handleSkip(m.id)}>Skip</button>
-                  </>
-                )}
-              </td>
+      <div className="toolbar">
+        <h2>Schedule</h2>
+        <button className="btn-secondary" onClick={handleSkipAllRemaining} disabled={!hasPending}>
+          Skip all remaining
+        </button>
+      </div>
+      <div className="card">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Message</th>
+              <th>Scheduled for</th>
+              <th>Status</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
-      {messages.length === 0 && <p>No scheduled messages for this trip.</p>}
+          </thead>
+          <tbody>
+            {messages.map((m) => (
+              <tr key={m.id}>
+                <td>{m.templateId.name}</td>
+                <td>{formatDate(m.sendAt)}</td>
+                <td>
+                  <span className="badge">{m.status}</span>
+                  {m.status === "skipped" && m.skipReason ? ` (${m.skipReason})` : ""}
+                </td>
+                <td>
+                  {m.status === "scheduled" && (
+                    <div className="row">
+                      <button onClick={() => handleSendNow(m.id)}>Send now</button>
+                      <button className="btn-secondary" onClick={() => handleSkip(m.id)}>
+                        Skip
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {messages.length === 0 && <p>No scheduled messages for this trip.</p>}
+      </div>
     </div>
   );
 }

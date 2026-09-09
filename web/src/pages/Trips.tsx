@@ -24,35 +24,39 @@ export default function Trips() {
   if (loading) return <p>Loading…</p>;
 
   return (
-    <div>
+    <div className="page">
       <h2>Trips</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left" }}>Guest</th>
-            <th style={{ textAlign: "left" }}>Starts</th>
-            <th style={{ textAlign: "left" }}>Ends</th>
-            <th style={{ textAlign: "left" }}>Status</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {trips.map((trip) => (
-            <tr key={trip.id}>
-              <td>
-                {trip.guestFirstName} {trip.guestLastName}
-              </td>
-              <td>{formatDate(trip.startAt)}</td>
-              <td>{formatDate(trip.endAt)}</td>
-              <td>{trip.status}</td>
-              <td>
-                <Link to={`/trips/${trip.id}`}>View schedule</Link>
-              </td>
+      <div className="card">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Guest</th>
+              <th>Starts</th>
+              <th>Ends</th>
+              <th>Status</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
-      {trips.length === 0 && <p>No trips synced yet.</p>}
+          </thead>
+          <tbody>
+            {trips.map((trip) => (
+              <tr key={trip.id}>
+                <td>
+                  {trip.guestFirstName} {trip.guestLastName}
+                </td>
+                <td>{formatDate(trip.startAt)}</td>
+                <td>{formatDate(trip.endAt)}</td>
+                <td>
+                  <span className="badge">{trip.status}</span>
+                </td>
+                <td>
+                  <Link to={`/trips/${trip.id}`}>View schedule</Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {trips.length === 0 && <p>No trips synced yet.</p>}
+      </div>
     </div>
   );
 }

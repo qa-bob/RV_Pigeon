@@ -41,45 +41,55 @@ export default function Templates() {
 
   if (editing) {
     return (
-      <TemplateEditor
-        template={editing === "new" ? undefined : editing}
-        listings={listings}
-        onSave={handleSave}
-        onCancel={() => setEditing(null)}
-      />
+      <div className="page">
+        <div className="card">
+          <TemplateEditor
+            template={editing === "new" ? undefined : editing}
+            listings={listings}
+            onSave={handleSave}
+            onCancel={() => setEditing(null)}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div>
-      <h2>Message Templates</h2>
-      <button onClick={() => setEditing("new")}>Create new template</button>
-      <table style={{ width: "100%", marginTop: "1rem", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: "left" }}>Name</th>
-            <th style={{ textAlign: "left" }}>Schedule</th>
-            <th style={{ textAlign: "left" }}>Active</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {templates.map((t) => (
-            <tr key={t.id}>
-              <td>{t.name}</td>
-              <td>
-                {t.offsetAmount} {t.offsetUnit} {t.offsetDirection} {t.triggerEvent}
-              </td>
-              <td>
-                <input type="checkbox" checked={t.active} onChange={() => toggleActive(t)} />
-              </td>
-              <td>
-                <button onClick={() => setEditing(t)}>Edit</button>
-              </td>
+    <div className="page">
+      <div className="toolbar">
+        <h2>Message Templates</h2>
+        <button onClick={() => setEditing("new")}>Create new template</button>
+      </div>
+      <div className="card">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Schedule</th>
+              <th>Active</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {templates.map((t) => (
+              <tr key={t.id}>
+                <td>{t.name}</td>
+                <td>
+                  {t.offsetAmount} {t.offsetUnit} {t.offsetDirection} {t.triggerEvent}
+                </td>
+                <td>
+                  <input type="checkbox" checked={t.active} onChange={() => toggleActive(t)} />
+                </td>
+                <td>
+                  <button className="btn-secondary" onClick={() => setEditing(t)}>
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

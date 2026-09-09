@@ -2,10 +2,9 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { clearToken } from "../services/apiClient";
 import { ActivityBanner } from "./ActivityBanner";
 
-const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
-  marginRight: "1rem",
-  fontWeight: isActive ? "bold" : "normal",
-});
+function navLinkClassName({ isActive }: { isActive: boolean }) {
+  return isActive ? "nav-link active" : "nav-link";
+}
 
 export function Layout() {
   const navigate = useNavigate();
@@ -16,34 +15,33 @@ export function Layout() {
   }
 
   return (
-    <div style={{ fontFamily: "sans-serif" }}>
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "1rem",
-          borderBottom: "1px solid #ddd",
-        }}
-      >
-        <nav>
-          <NavLink to="/" style={navLinkStyle} end>
+    <div>
+      <header className="app-header">
+        <img
+          src="/brand/rv-pigeon-logo-horizontal-dark-on-charcoal.png"
+          alt="RV Pigeon"
+          className="app-header__logo"
+        />
+        <nav className="app-header__nav">
+          <NavLink to="/" className={navLinkClassName} end>
             Home
           </NavLink>
-          <NavLink to="/templates" style={navLinkStyle}>
+          <NavLink to="/templates" className={navLinkClassName}>
             Templates
           </NavLink>
-          <NavLink to="/trips" style={navLinkStyle}>
+          <NavLink to="/trips" className={navLinkClassName}>
             Trips
           </NavLink>
-          <NavLink to="/listings" style={navLinkStyle}>
+          <NavLink to="/listings" className={navLinkClassName}>
             Listings
           </NavLink>
         </nav>
-        <button onClick={handleLogout}>Sign out</button>
+        <button className="btn-secondary app-header__signout" onClick={handleLogout}>
+          Sign out
+        </button>
       </header>
       <ActivityBanner />
-      <main style={{ padding: "1.5rem" }}>
+      <main className="page app-main">
         <Outlet />
       </main>
     </div>

@@ -1,4 +1,7 @@
-# RV_Pigeon
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="web/public/brand/rv-pigeon-logo-horizontal-dark-on-charcoal.png">
+  <img src="web/public/brand/rv-pigeon-logo-horizontal-on-cream.png" alt="RV Pigeon" width="480">
+</picture>
 
 A scheduled guest-messaging tool for RV rental hosts. Define a message once — what it says and
 when it should go out relative to a trip milestone — and it's delivered automatically into the

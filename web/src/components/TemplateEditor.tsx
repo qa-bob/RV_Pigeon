@@ -67,13 +67,13 @@ export function TemplateEditor({ template, listings, onSave, onCancel }: Props) 
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem", maxWidth: 480 }}>
+    <form onSubmit={handleSubmit} className="form">
       <label>
         Template name (internal only)
         <input value={name} onChange={(e) => setName(e.target.value)} required />
       </label>
 
-      <fieldset style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+      <fieldset className="row">
         <legend>Schedule</legend>
         <select value={triggerEvent} onChange={(e) => setTriggerEvent(e.target.value as TriggerEvent)}>
           {TRIGGER_EVENTS.map((t) => (
@@ -135,7 +135,7 @@ export function TemplateEditor({ template, listings, onSave, onCancel }: Props) 
         </label>
         {!allListings &&
           listings.map((listing) => (
-            <label key={listing.id} style={{ display: "block" }}>
+            <label key={listing.id}>
               <input
                 type="checkbox"
                 checked={listingIds.includes(listing.id)}
@@ -153,11 +153,11 @@ export function TemplateEditor({ template, listings, onSave, onCancel }: Props) 
 
       {error && <p role="alert">{error}</p>}
 
-      <div style={{ display: "flex", gap: "0.5rem" }}>
+      <div className="row">
         <button type="submit" disabled={saving}>
           {saving ? "Saving…" : "Save"}
         </button>
-        <button type="button" onClick={onCancel}>
+        <button type="button" className="btn-secondary" onClick={onCancel}>
           Cancel
         </button>
       </div>
