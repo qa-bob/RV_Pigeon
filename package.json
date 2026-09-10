@@ -14,7 +14,9 @@
     "build:shared": "npm run build -w shared",
     "test:api": "npm run test -w api",
     "lint": "eslint .",
-    "format": "prettier --check ."
+    "format": "prettier --check .",
+    "deploy:web": "powershell -ExecutionPolicy Bypass -File scripts/deploy-web.ps1",
+    "deploy:api": "powershell -ExecutionPolicy Bypass -File scripts/deploy-api.ps1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
