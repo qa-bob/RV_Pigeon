@@ -1,8 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ApiError, login } from "../services/apiClient";
+import { ApiError, register } from "../services/apiClient";
 
-export default function Login() {
+export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -14,13 +14,13 @@ export default function Login() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, password);
+      await register(email, password);
       navigate("/", { replace: true });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        setError("Invalid email or password.");
+      if (err instanceof ApiError) {
+        setError(err.message);
       } else {
-        setError("Could not sign in. Is the API server running?");
+        setError("Could not create the account.");
       }
     } finally {
       setSubmitting(false);
@@ -47,21 +47,22 @@ export default function Login() {
             />
           </label>
           <label>
-            Password
+            Password (min. 8 characters)
             <input
               type="password"
               value={password}
+              minLength={8}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </label>
           {error && <p role="alert">{error}</p>}
           <button type="submit" disabled={submitting}>
-            {submitting ? "Signing in…" : "Sign in"}
+            {submitting ? "Creating account…" : "Create account"}
           </button>
         </form>
         <p>
-          <Link to="/register">Need an account? Create one</Link>
+          <Link to="/login">Already have an account? Sign in</Link>
         </p>
       </div>
     </main>
