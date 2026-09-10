@@ -12,7 +12,10 @@ import { agentAuth } from "./middleware/agentAuth";
 
 export function createApp() {
   const app = express();
-  app.use(cors());
+  const corsOrigin = (process.env.CORS_ORIGIN ?? "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim());
+  app.use(cors({ origin: corsOrigin }));
   app.use(express.json());
 
   app.get("/health", (_req, res) => res.json({ status: "ok" }));
